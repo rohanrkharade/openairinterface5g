@@ -339,6 +339,7 @@ bool nr_band_supports_3mhz(int band);
 bool nr_band_supports_power_class_1(int band);
 bool nr_is_3mhz_carrier(int scs, frequency_range_t frequency_range, int n_rb);
 int get_nr_channel_bw_mhz(int scs, frequency_range_t frequency_range, int n_rb);
+bool nr_carrier_on_channel_raster(int band, int scs, uint64_t point_a_hz, int offset_to_carrier, int n_rb, bool uplink);
 bool nr_carrier_within_band(int band,
                             int scs,
                             uint64_t point_a_hz,

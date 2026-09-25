@@ -474,6 +474,33 @@ bool nr_carrier_within_band(int band,
   return center_hz >= band_min_hz + bw_hz / 2 && center_hz + bw_hz / 2 <= band_max_hz;
 }
 
+// 38.101-1 5.4.2.2 and 38.101-2 5.4.2.2: the RF reference frequency of a carrier is the subcarrier k = 0 of RB
+// floor(N_RB / 2) for an even N_RB, k = 6 for an odd N_RB, i.e. N_RB * 6 subcarriers above the first one. It has to
+// be on the channel raster of the band (38.101-1 Table 5.4.2.3-1)
+bool nr_carrier_on_channel_raster(int band, int scs, uint64_t point_a_hz, int offset_to_carrier, int n_rb, bool uplink)
+{
+  const int idx = get_nr_table_idx(band, scs);
+  const uint64_t ref_hz = point_a_hz + ((uint64_t)offset_to_carrier * NR_NB_SC_PER_RB + n_rb * 6) * (15000 << scs);
+  // global frequency raster (38.101-1 Table 5.4.2.1-1, 38.101-2 Table 5.4.2.1-1)
+  uint64_t f_offs_hz = 0, delta_f_global_hz = 5000;
+  uint32_t n_ref_offs = 0;
+  if (ref_hz >= 24250000000ULL) {
+    f_offs_hz = 24250080000ULL;
+    delta_f_global_hz = 60000;
+    n_ref_offs = 2016667;
+  } else if (ref_hz >= 3000000000ULL) {
+    f_offs_hz = 3000000000ULL;
+    delta_f_global_hz = 15000;
+    n_ref_offs = 600000;
+  }
+  if (ref_hz < f_offs_hz || (ref_hz - f_offs_hz) % delta_f_global_hz != 0)
+    return false;
+  const uint32_t n_ref = n_ref_offs + (ref_hz - f_offs_hz) / delta_f_global_hz;
+  const uint32_t n_first = uplink ? nr_bandtable[idx].N_OFFs_UL : nr_bandtable[idx].N_OFFs_DL;
+  const int step = uplink ? nr_bandtable[idx].ul_stepsize : nr_bandtable[idx].dl_stepsize;
+  return step > 0 && n_ref >= n_first && (n_ref - n_first) % step == 0;
+}
+
 int get_supported_bw_mhz(frequency_range_t frequency_range, int bw_index)
 {
   if (frequency_range == FR1) {
@@ -665,24 +692,15 @@ uint64_t from_nrarfcn(int nr_bandP, uint8_t scs_index, uint32_t nrarfcn)
     F_REF_Offs_khz = 24250080;
   }
 
-  // First check if the ARFCN is on the RASTER
-  uint32_t stepsize = nr_bandtable[i].dl_stepsize;
+  // the channel raster applies to the RF reference frequency of a carrier only (38.101-1 5.4.2), not to any NR-ARFCN
+  // (PointA, SSB), see nr_carrier_on_channel_raster()
   uint32_t N_OFFs = nr_bandtable[i].N_OFFs_DL;
+  if (nrarfcn >= nr_bandtable[i].N_OFFs_UL && (nr_bandtable[i].N_OFFs_UL > N_OFFs || nrarfcn < N_OFFs))
+    N_OFFs = nr_bandtable[i].N_OFFs_UL;
 
-  if (nrarfcn >= nr_bandtable[i].N_OFFs_UL) {
-    if (nr_bandtable[i].N_OFFs_UL > N_OFFs || nrarfcn < N_OFFs) {
-      N_OFFs = nr_bandtable[i].N_OFFs_UL;
-      stepsize = nr_bandtable[i].ul_stepsize;
-    }
-  }
-
-  LOG_D(NR_MAC, "N_OFFs %u, deltaFglobal %d KHz, stepsize:%d\n", N_OFFs, deltaFglobal, stepsize);
+  LOG_D(NR_MAC, "N_OFFs %u, deltaFglobal %d KHz\n", N_OFFs, deltaFglobal);
 
   AssertFatal(nrarfcn >= N_OFFs,"nrarfcn %u < N_OFFs[%d] %u\n", nrarfcn, nr_bandtable[i].band, N_OFFs);
-
-  if ((nrarfcn - N_OFFs) % stepsize != 0)
-    LOG_E(NR_MAC, "nrarfcn %u is not on the channel raster for step size %u. N_OFFS:%d\n",
-                  nrarfcn, stepsize, N_OFFs);
 
   uint64_t frequency = 1000 * (F_REF_Offs_khz + (nrarfcn - N_REF_Offs) * deltaFglobal);
   LOG_I(NR_MAC, "Computing frequency (nrarfcn %llu => %llu KHz, NR band %d\n",

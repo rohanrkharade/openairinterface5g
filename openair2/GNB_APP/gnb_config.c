@@ -462,6 +462,16 @@ static void check_carrier_within_band(int band, NR_ARFCN_ValueNR_t point_a, cons
           n_rb,
           15 << scs,
           band);
+  if (!nr_carrier_on_channel_raster(band, scs, point_a_hz, offset, n_rb, uplink))
+    LOG_W(GNB_APP,
+          "%s carrier (pointA %ld, offsetToCarrier %ld, %ld PRBs, SCS %d kHz): its center is not on the channel raster of band "
+          "n%d (38.101 5.4.2)\n",
+          uplink ? "UL" : "DL",
+          point_a,
+          offset,
+          n_rb,
+          15 << scs,
+          band);
 }
 
 static void check_carriers_within_band(const NR_ServingCellConfigCommon_t *scc)

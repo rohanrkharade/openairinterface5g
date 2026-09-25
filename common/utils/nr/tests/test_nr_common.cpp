@@ -269,6 +269,27 @@ TEST(nr_power_class, power_class_1_bands)
     EXPECT_FALSE(nr_band_supports_power_class_1(band)) << "band " << band;
 }
 
+TEST(nr_channel_raster, carrier_centre)
+{
+  // 38.101-1 5.4.2: the RF reference frequency (PointA + N_RB * 6 subcarriers) has to be on the channel raster
+  // n100 5 MHz: 919.75 + 2.25 = 922.0 MHz (DL), 877.0 MHz (UL), 100 kHz raster
+  EXPECT_TRUE(nr_carrier_on_channel_raster(100, 0, from_nrarfcn(100, 0, 183950), 0, 25, false));
+  EXPECT_TRUE(nr_carrier_on_channel_raster(100, 0, from_nrarfcn(100, 0, 174950), 0, 25, true));
+  // n100 3 MHz: 920.05 + 1.35 = 921.4 MHz
+  EXPECT_TRUE(nr_carrier_on_channel_raster(100, 0, from_nrarfcn(100, 0, 184010), 0, 15, false));
+  // n101: 1900.45 + 2.25 = 1902.7 MHz, 1900.68 + 4.32 = 1905.0 MHz
+  EXPECT_TRUE(nr_carrier_on_channel_raster(101, 0, from_nrarfcn(101, 0, 380090), 0, 25, false));
+  EXPECT_TRUE(nr_carrier_on_channel_raster(101, 1, from_nrarfcn(101, 1, 380136), 0, 24, false));
+  // n78, 106 PRB at 30 kHz (gnb.sa.band78.106prb.rfsim.yaml): 3300.6 + 19.08 = 3319.68 MHz, 30 kHz raster
+  EXPECT_TRUE(nr_carrier_on_channel_raster(78, 1, from_nrarfcn(78, 1, 620040), 0, 106, false));
+  // n66, 25 PRB at 15 kHz from 2150 MHz: 2152.25 MHz is not on the 100 kHz raster
+  EXPECT_FALSE(nr_carrier_on_channel_raster(66, 0, from_nrarfcn(66, 0, 430000), 0, 25, false));
+  // same carrier shifted by 50 kHz: 2152.3 MHz is
+  EXPECT_TRUE(nr_carrier_on_channel_raster(66, 0, from_nrarfcn(66, 0, 430010), 0, 25, false));
+  // offsetToCarrier moves the carrier by whole RBs (180 kHz): 922.0 + 0.18 is not on the raster
+  EXPECT_FALSE(nr_carrier_on_channel_raster(100, 0, from_nrarfcn(100, 0, 183950), 1, 25, false));
+}
+
 int main(int argc, char **argv)
 {
   logInit();
