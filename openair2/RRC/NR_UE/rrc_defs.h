@@ -213,6 +213,8 @@ typedef struct NR_UE_RRC_INST_s {
   uint32_t phyCellID;
   long arfcn_ssb;
   uint64_t cell_identity;
+  // DL operating band of the serving cell, from SIB1 (0 if unknown)
+  int serving_band;
 
   OAI_NR_UECapability_t UECap;
   NR_UE_Timers_Constants_t timers_and_constants;
