@@ -615,6 +615,8 @@ typedef struct NR_UE_MAC_INST_s {
   uint16_t nr_band;
   uint8_t ssb_subcarrier_offset;
   int ssb_start_subcarrier;
+  /// SSB punctured to 12 RBs, found on the 3 MHz synchronization raster
+  bool ssb_punctured;
   uint64_t dl_frequency;
   int numerology;
 

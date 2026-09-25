@@ -86,6 +86,12 @@ static const uint16_t NCS_unrestricted_delta_f_RA_15[16] = {0, 2, 4, 6, 8, 10, 1
 //	- $z: subclause-minor
 //	- $a: ($a)th of column in table, start from zero
 const int32_t table_38213_13_1_c1[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, reserved}; // index 15 reserved
+// 38.213 Table 13-0 (Rel-18): {15, 15} kHz, bands with minimum channel bandwidth 3 MHz, SSB on the 3 MHz raster
+// (index 0 to 9) or at GSCN 41638 of n100 (index 10 and 11). With 24 RBs in a 3 MHz (5 MHz) channel, the 9 (4)
+// highest RBs are punctured (38.211 7.3.2.2), which is not supported: only index 0 and 1 (12 RBs) are.
+static const int32_t table_38213_13_0_c2[16] = {12, 12, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, reserved, reserved, reserved, reserved};
+static const int32_t table_38213_13_0_c3[16] = { 2,  3,  2,  2,  3,  3,  2,  2,  3,  3,  2,  3, reserved, reserved, reserved, reserved};
+static const int32_t table_38213_13_0_c4[16] = { 0,  0,  0,  2,  0,  2,  0,  2,  0,  2,  0,  0, reserved, reserved, reserved, reserved};
 const int32_t table_38213_13_1_c2[16] = {24, 24, 24, 24, 24, 24, 48, 48, 48, 48, 48, 48, 96, 96, 96, reserved}; // index 15 reserved
 const int32_t table_38213_13_1_c3[16] = { 2,  2,  2,  3,  3,  3,  1,  1,  2,  2,  3,  3,  1,  2,  3, reserved}; // index 15 reserved
 const int32_t table_38213_13_1_c4[16] = { 0,  2,  4,  0,  2,  4, 12, 16, 12, 16, 12, 16, 38, 38, 38, reserved}; // index 15 reserved
@@ -3758,7 +3764,8 @@ void get_type0_PDCCH_CSS_config_parameters(NR_Type0_PDCCH_CSS_config_t *type0_PD
                                            int grid_size,
                                            uint32_t ssb_index,
                                            uint32_t ssb_period,
-                                           uint32_t ssb_offset_point_a)
+                                           uint32_t ssb_offset_point_a,
+                                           bool ssb_3mhz_raster)
 {
   if (!mib) {
     LOG_E(MAC, "get_type0_PDCCH_CSS_config_parameters() called while mib is not available, mac layer incoherency\n");
@@ -3809,6 +3816,16 @@ void get_type0_PDCCH_CSS_config_parameters(NR_Type0_PDCCH_CSS_config_t *type0_PD
   //  type0-pdcch coreset
   switch(((int)scs_ssb << 3) | (int)scs_pdcch) {
     case (NR_SubcarrierSpacing_kHz15 << 3) | NR_SubcarrierSpacing_kHz15:
+      if (ssb_3mhz_raster) {
+        AssertFatal(index_4msb < 2,
+                    "38.213 Table 13-0 index %d not supported, only index 0 and 1 (12 RBs, no puncturing)\n",
+                    index_4msb);
+        type0_PDCCH_CSS_config->type0_pdcch_ss_mux_pattern = 1;
+        type0_PDCCH_CSS_config->num_rbs = table_38213_13_0_c2[index_4msb];
+        type0_PDCCH_CSS_config->num_symbols = table_38213_13_0_c3[index_4msb];
+        type0_PDCCH_CSS_config->rb_offset = table_38213_13_0_c4[index_4msb];
+        break;
+      }
       AssertFatal(index_4msb < 15, "38.213 Table 13-1 4 MSB out of range\n");
       type0_PDCCH_CSS_config->type0_pdcch_ss_mux_pattern = 1;
       type0_PDCCH_CSS_config->num_rbs = table_38213_13_1_c2[index_4msb];
@@ -4107,6 +4124,10 @@ void fill_coresetZero(NR_ControlResourceSet_t *coreset0, NR_Type0_PDCCH_CSS_conf
     coreset0->frequencyDomainResources.buf = calloc(1,6);
 
   switch(type0_PDCCH_CSS_config->num_rbs){
+    case 12: // 38.213 Table 13-0 (3 MHz channel bandwidth)
+      coreset0->frequencyDomainResources.buf[0] = 0xc0;
+      coreset0->frequencyDomainResources.buf[1] = 0;
+      break;
     case 24:
       coreset0->frequencyDomainResources.buf[0] = 0xf0;
       coreset0->frequencyDomainResources.buf[1] = 0;

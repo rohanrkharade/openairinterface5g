@@ -306,7 +306,8 @@ void get_type0_PDCCH_CSS_config_parameters(NR_Type0_PDCCH_CSS_config_t *type0_PD
                                            int grid_size,
                                            uint32_t ssb_index,
                                            uint32_t ssb_period,
-                                           uint32_t ssb_offset_point_a);
+                                           uint32_t ssb_offset_point_a,
+                                           bool ssb_3mhz_raster);
 
 uint16_t get_ssb_start_symbol(const long band, NR_SubcarrierSpacing_t scs, int i_ssb);
 

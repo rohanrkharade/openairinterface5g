@@ -110,6 +110,7 @@ static int handle_bcch_bch(NR_UE_MAC_INST_t *mac,
                            uint32_t ssb_index_mod8,
                            uint32_t ssb_length,
                            uint16_t ssb_start_subcarrier,
+                           bool ssb_punctured,
                            long ssb_arfcn,
                            uint16_t cell_id)
 {
@@ -117,6 +118,7 @@ static int handle_bcch_bch(NR_UE_MAC_INST_t *mac,
   mac->physCellId = cell_id;
   mac->mib_additional_bits = additional_bits;
   mac->ssb_start_subcarrier = ssb_start_subcarrier;
+  mac->ssb_punctured = ssb_punctured;
   if(ssb_length == 64) {
     mac->frequency_range = FR2;
     uint8_t ab = additional_bits & 0xff;
@@ -311,6 +313,7 @@ static uint32_t nr_ue_dl_processing(NR_UE_MAC_INST_t *mac, nr_downlink_indicatio
                                          rx_indication_body.ssb_pdu.ssb_index,
                                          rx_indication_body.ssb_pdu.ssb_length,
                                          rx_indication_body.ssb_pdu.ssb_start_subcarrier,
+                                         rx_indication_body.ssb_pdu.ssb_punctured,
                                          rx_indication_body.ssb_pdu.arfcn,
                                          rx_indication_body.ssb_pdu.cell_id)) << FAPI_NR_RX_PDU_TYPE_SSB;
           }

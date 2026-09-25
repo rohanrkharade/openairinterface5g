@@ -532,6 +532,8 @@ int find_pdcch_candidate(const nr_cell_sched_t *cell,
   const int N_symb = coreset->duration; // nb of coreset symbols
   const int N_regs = N_rb * N_symb; // nb of REGs per coreset
   const int N_cces = N_regs / NR_NB_REG_PER_CCE; // nb of cces in coreset
+  if (aggregation > N_cces) // no candidate of this aggregation level in a small CORESET
+    return -1;
   const int R = pdcch->InterleaverSize;
   const int L = pdcch->RegBundleSize;
   const int C = R > 0 ? N_regs / (L * R) : 0;

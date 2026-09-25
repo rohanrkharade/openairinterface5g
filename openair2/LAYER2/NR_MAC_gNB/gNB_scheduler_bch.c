@@ -204,7 +204,8 @@ void schedule_nr_mib(nr_cell_sched_t *cell, frame_t frameP, slot_t slotP, nfapi_
                                                   bw,
                                                   i_ssb,
                                                   ssb_frame_periodicity,
-                                                  prb_offset);
+                                                  prb_offset,
+                                                  is_ssb_punctured(scc));
             cell->type0_PDCCH_CSS_config[i_ssb].active = true;
           }
         }
@@ -555,21 +556,25 @@ static void other_sib_sched_control(nr_cell_sched_t *cell,
 
   NR_pdsch_dmrs_t dmrs_parms = get_dl_dmrs_params(scc, NULL, &tda_info, 1);
 
-  int aggregation_level = 0;
-  int nr_of_candidates = 0;
-  for (int i = 0; i < 5; i++) {
-    find_aggregation_candidates(&aggregation_level, &nr_of_candidates, ss, 16 >> i);
-    if (nr_of_candidates > 0)
-      break; // choosing the higher value of aggregation level available
-  }
-
-  AssertFatal(nr_of_candidates > 0, "nr_of_candidates is 0\n");
   AssertFatal(ss->controlResourceSetId, "ss->controlResourceSetId is NULL\n");
   NR_ControlResourceSet_t *coreset = get_coreset(cell, scc, NULL, *ss->controlResourceSetId);
   if (!cell->sched_pdcch_otherSI) {
     cell->sched_pdcch_otherSI = calloc(1, sizeof(*cell->sched_pdcch_otherSI));
     *cell->sched_pdcch_otherSI = set_pdcch_structure(cell, ss, coreset, scc, NULL, type0_PDCCH_CSS_config);
   }
+  // the CORESET can be smaller than 16 CCEs (e.g. 12 RB CORESET#0 with 3 MHz channel bandwidth)
+  const int n_cces = cell->sched_pdcch_otherSI->n_rb * cell->sched_pdcch_otherSI->DurationSymbols / NR_NB_REG_PER_CCE;
+  int aggregation_level = 0;
+  int nr_of_candidates = 0;
+  for (int i = 0; i < 5; i++) {
+    if ((16 >> i) > n_cces)
+      continue;
+    find_aggregation_candidates(&aggregation_level, &nr_of_candidates, ss, 16 >> i);
+    if (nr_of_candidates > 0)
+      break; // choosing the higher value of aggregation level available
+  }
+
+  AssertFatal(nr_of_candidates > 0, "nr_of_candidates is 0\n");
   int cce_index = find_pdcch_candidate(cell,
                                        aggregation_level,
                                        nr_of_candidates,

@@ -197,10 +197,13 @@ static NR_SetupRelease_PDSCH_ConfigCommon_t *clone_pdsch_configcommon(const NR_S
   return clone;
 }
 
-static int get_pucch2_size(const int num_ant_ports)
+static int get_pucch2_size(const int num_ant_ports, const int bwp_size)
 {
   // TODO the logic to set the number of PRBs needs to be improved
   //      it should involve the code rate parameter and the max number of bits to be transmitted
+  // BWPs below 24 PRBs (e.g. 3 MHz channel bandwidth): 4 PRBs, enough for the CSI of 1 or 2 antenna ports
+  if (bwp_size < 24 && num_ant_ports <= 2)
+    return 4;
   return (num_ant_ports <= 4 ? 8 : 12);
 }
 
@@ -214,14 +217,14 @@ static int get_nb_pucch2_per_slot(const NR_ServingCellConfigCommon_t *scc, int b
   int max_csi_reports = MAX_MOBILES_PER_GNB << 1; // 2 reports per UE (RSRP and RI-PMI-CQI)
   int available_report_occasions = max_meas_report_period * ul_slots_period / n_slots_period;
   int nb_pucch2 = (max_csi_reports / (available_report_occasions + 1)) + 1;
-  int pucch2_size = get_pucch2_size(ap->N1 * ap->N2 * ap->XP);
+  int pucch2_size = get_pucch2_size(ap->N1 * ap->N2 * ap->XP, bwp_size);
   // in current implementation we need (nb_pucch2 * pucch2_size) prbs for PUCCH2
   // and MAX_MOBILES_PER_GNB prbs for PUCCH1
-  // checked for validity in verify_radio_configuration
-  AssertFatal((nb_pucch2 * pucch2_size) + MAX_MOBILES_PER_GNB <= bwp_size,
-              "Cannot allocate all required PUCCH resources for max number of %d UEs in BWP with %d PRBs\n",
-              MAX_MOBILES_PER_GNB,
-              bwp_size);
+  // in small BWPs (e.g. 15 PRBs of 3 MHz channel bandwidth), UEs without PUCCH1 PRB are rejected, see config_pucch_resset0
+  const int max_ues = bwp_size - nb_pucch2 * pucch2_size;
+  AssertFatal(max_ues > 0, "Cannot allocate PUCCH resources for any UE in BWP with %d PRBs\n", bwp_size);
+  if (max_ues < MAX_MOBILES_PER_GNB)
+    LOG_W(NR_MAC, "BWP with %d PRBs: PUCCH resources for %d UEs only (max %d)\n", bwp_size, max_ues, MAX_MOBILES_PER_GNB);
   return nb_pucch2;
 }
 
@@ -305,7 +308,7 @@ static NR_ControlResourceSet_t *get_coreset_config(int bwp_id,
   }
   coreset->frequencyDomainResources.size = 6;
   coreset->frequencyDomainResources.bits_unused = 3;
-  coreset->duration = (eff_bwp_size < 24) ? 3 : (eff_bwp_size < 48) ? 2 : 1;
+  coreset->duration = (eff_bwp_size < 48) ? 2 : 1;
   coreset->cce_REG_MappingType.present = NR_ControlResourceSet__cce_REG_MappingType_PR_nonInterleaved;
   coreset->precoderGranularity = NR_ControlResourceSet__precoderGranularity_sameAsREG_bundle;
 
@@ -1261,7 +1264,7 @@ static void config_pucch_resset0(const NR_ServingCellConfigCommon_t *scc,
     AssertFatal(pucch_F0_2WithoutFH == NULL,"UE does not support PUCCH F0 without frequency hopping. Current configuration is without FH\n");
   }
 
-  int pucch2_size = get_pucch2_size(ap->N1 * ap->N2 * ap->XP);
+  int pucch2_size = get_pucch2_size(ap->N1 * ap->N2 * ap->XP, curr_bwp);
   NR_PUCCH_Resource_t *pucchres0 = calloc(1,sizeof(*pucchres0));
   pucchres0->pucch_ResourceId = *pucchid;
   int num_pucch2 = get_nb_pucch2_per_slot(scc, curr_bwp, ap);
@@ -1301,7 +1304,7 @@ static void config_pucch_resset1(const NR_ServingCellConfigCommon_t *scc,
     AssertFatal(pucch_F0_2WithoutFH == NULL,"UE does not support PUCCH F2 without frequency hopping. Current configuration is without FH\n");
   }
 
-  int pucch2_size = get_pucch2_size(ap->N1 * ap->N2 * ap->XP);
+  int pucch2_size = get_pucch2_size(ap->N1 * ap->N2 * ap->XP, curr_bwp);
   NR_PUCCH_Resource_t *pucchres2 = calloc(1,sizeof(*pucchres2));
   pucchres2->pucch_ResourceId = *pucchressetid;
   int num_pucch2 = get_nb_pucch2_per_slot(scc, curr_bwp, ap);
@@ -3816,8 +3819,8 @@ static bool verify_radio_configuration(int uid,
   }
 
   const nr_pdsch_AntennaPorts_t *ap = &configuration->pdsch_AntennaPorts;
-  int pucch2_size = get_pucch2_size(ap->N1 * ap->N2 * ap->XP);
   int curr_bwp = NRRIV2BW(scc->downlinkConfigCommon->initialDownlinkBWP->genericParameters.locationAndBandwidth, MAX_BWP_SIZE);
+  int pucch2_size = get_pucch2_size(ap->N1 * ap->N2 * ap->XP, curr_bwp);
   int num_pucch2 = get_nb_pucch2_per_slot(scc, curr_bwp, ap);
   int pucchres0_startingPRB = (pucch2_size * num_pucch2) + uid;
   // see config_pucch_resset0
@@ -3825,8 +3828,8 @@ static bool verify_radio_configuration(int uid,
     LOG_E(NR_RRC, "UID %d, cannot allocate resources for PUCCH0, rejecting UE\n", uid);
     return false; // cannot allocate resources for PUCCH0
   }
-  // see get_nb_pucch2_per_slot
-  if ((num_pucch2 * pucch2_size) + MAX_MOBILES_PER_GNB > curr_bwp) {
+  // see get_nb_pucch2_per_slot, the PUCCH1 PRB of the UE is checked above
+  if (num_pucch2 * pucch2_size >= curr_bwp) {
     LOG_E(NR_RRC, "UID %d, cannot allocate resources for PUCCH2, rejecting UE\n", uid);
     return false; // cannot allocate resources for PUCCH2
   }
