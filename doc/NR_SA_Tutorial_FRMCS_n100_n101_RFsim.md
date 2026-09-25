@@ -4,7 +4,7 @@
 
 This tutorial runs a complete 5G SA system (OAI 5GC, OAI gNB, OAI nrUE) in
 Docker containers on the FRMCS (Future Railway Mobile Communication System)
-bands n100 and n101, using the RFsimulator instead of radios. It covers
+bands n100 and n101, using the RFsimulator instead of radios, including the Rel-18 3 MHz channel bandwidth of n100. It covers
 building the images, deploying each scenario, checking attach and user-plane
 traffic, and collecting the logs. The full gNB and UE logs of a reference run
 are included in [Reference logs](#7-reference-logs).
@@ -25,10 +25,10 @@ are included in [Reference logs](#7-reference-logs).
 
 | Band | Duplex | UL (MHz)       | DL (MHz)       | NR-ARFCN (DL)   | GSCN                                   |
 |------|--------|----------------|----------------|-----------------|----------------------------------------|
-| n100 | FDD    | 874.4 - 880    | 919.4 - 925    | 183880 - 185000 | 2303 - 2307 (15 kHz)                   |
+| n100 | FDD    | 874.4 - 880    | 919.4 - 925    | 183880 - 185000 | 2303 - 2307 (15 kHz), 3 MHz raster: 31240 - 31242, 31244 - 31253 |
 | n101 | TDD    | 1900 - 1910    | 1900 - 1910    | 380000 - 382000 | 4754 - 4768 (15 kHz), 4760 - 4764 (30 kHz) |
 
-Three scenarios are provided. Each one has a gNB configuration file in
+Four scenarios are provided. Each one has a gNB configuration file in
 `ci-scripts/conf_files/` and a docker-compose file in `ci-scripts/yaml_files/`.
 
 | Scenario                        | Bandwidth, SCS  | PointA (DL)           | Carrier center | SSB                           | CORESET0 | UE finds the SSB    |
@@ -36,10 +36,12 @@ Three scenarios are provided. Each one has a gNB configuration file in
 | `5g_rfsimulator_n100`           | 5 MHz, 15 kHz   | 183950 (919.75 MHz)   | 922.0 MHz      | 184370, 921.85 MHz, GSCN 2305 | index 0  | given (`--ssb 20`)  |
 | `5g_rfsimulator_n101_u0_25prb`  | 5 MHz, 15 kHz   | 380090 (1900.45 MHz)  | 1902.7 MHz     | 380450, 1902.25 MHz, GSCN 4756 | index 0 | scan (`--ue-scan-carrier`) |
 | `5g_rfsimulator_n101_u1_24prb`  | 10 MHz, 30 kHz  | 380136 (1900.68 MHz)  | 1905.0 MHz     | 380910, 1904.55 MHz, GSCN 4761 | index 0 | scan (`--ue-scan-carrier`) |
+| `5g_rfsimulator_n100_3mhz`      | 3 MHz, 15 kHz   | 184010 (920.05 MHz)   | 921.4 MHz      | 184310, 921.55 MHz, 3 MHz raster GSCN 31244 | index 0 (Table 13-0) | given (`--ssb 28`) |
 
 - n100 uses a 45 MHz duplex spacing: the UL carrier is at 877.0 MHz (PointA
   174950, 874.75 MHz).
 - n101 uses a 5 ms TDD pattern.
+- The 3 MHz scenario is described in [3 MHz channel bandwidth](#3-mhz-channel-bandwidth).
 - In all scenarios, the whole channel bandwidth, including the guard bands,
   lies inside the band. The gNB checks this at startup and prints an error
   (RBs outside the band) or a warning (guard bands outside the band)
@@ -53,6 +55,28 @@ The gNB configurations for the B205mini radio are in
 `gnb.sa.band101.25prb.usrpb205mini.conf` and
 `gnb.sa.band101.24prb.usrpb205mini.conf`. The RFsimulator configurations only
 differ in the gNB name, PLMN, IP addresses and the `channelmod` section.
+
+### 3 MHz channel bandwidth
+
+3GPP Rel-18 adds a 3 MHz channel bandwidth (15 PRB, 15 kHz SCS only) for bands
+n26, n28, n31, n72, n85, n100 and n106 (TS 38.101-1 Table 5.3.5-1). n101 has
+no 3 MHz channel bandwidth. The scenario `5g_rfsimulator_n100_3mhz` uses
+`ci-scripts/conf_files/gnb.sa.band100.15prb.rfsim.conf`:
+
+- Carrier: 15 PRB, PointA 920.05 MHz, center 921.4 MHz, channel 919.9 - 922.9
+  MHz. UL: 45 MHz below.
+- SSB: on the 3 MHz synchronization raster (SSREF = N * 600 kHz + M * 50 kHz +
+  300 kHz, TS 38.101-1 Table 5.4.3.1-2), GSCN 31244 = 921.55 MHz. The SSB is
+  punctured to its 12 middle RBs (subcarriers 0 to 47 and 192 to 239 are not
+  transmitted, TS 38.211 7.4.3.1). `offsetToPointA` and `k_SSB` refer to the
+  SSB after puncturing: its first subcarrier is subcarrier 28 of the carrier,
+  so `offsetToPointA` is 2 and `k_SSB` is 4. The UE option `--ssb` is also the
+  first subcarrier of the SSB after puncturing.
+- CORESET#0: TS 38.213 Table 13-0 index 0, 12 RB and 2 symbols, RB 2 to 13.
+- `searchSpaceZero` 2 (O = 2): SIB1 is in slot 2. In slot 0, the SSB occupies
+  all the RBs of CORESET#0 in symbols 2 to 5 and SIB1 does not fit.
+- At most 11 UEs: the PUCCH format 0/1 resources are 1 PRB per UE, next to 4
+  PRBs of PUCCH format 2.
 
 ```mermaid
 flowchart LR
@@ -157,9 +181,11 @@ The UE options are set in `USE_ADDITIONAL_OPTIONS` of the docker-compose file:
 | n100                   | `-r 25 --numerology 0 --band 100 -C 922000000 --CO -45000000 --ssb 20`            |
 | n101, 5 MHz, 15 kHz    | `-r 25 --numerology 0 --band 101 -C 1902700000 --ue-scan-carrier`                 |
 | n101, 10 MHz, 30 kHz   | `-r 24 --numerology 1 --band 101 -C 1905000000 --ue-scan-carrier`                 |
+| n100, 3 MHz, 15 kHz    | `-r 15 --numerology 0 --band 100 -C 921400000 --CO -45000000 --ssb 28`            |
 
 - `-C` is the DL carrier center frequency, `--CO` the UL offset (FDD only).
-- `--ssb` is the offset of the first SSB subcarrier from PointA, in subcarriers.
+- `--ssb` is the offset of the first SSB subcarrier from PointA, in subcarriers
+  (after puncturing for 3 MHz).
 - `--ue-scan-carrier` makes the UE search all GSCNs of the band that fit in the
   carrier instead of using `--ssb`.
 
@@ -201,6 +227,17 @@ and detects the cell on GSCN 4761:
 [NR_PHY] I Scanning GSCN: 4763, with SSB offset: 45, SSB Freq: 1905650000.000000
 [NR_PHY] I Cell Detected with GSCN: 4761, SSB SC offset: 9, SSB Ref: 1904550000.000000, PSS Corr peak: 112 dB, PSS Corr Average: 72
 [PHY]    A Initial sync successful, PCI: 0
+```
+
+With 3 MHz and `--ue-scan-carrier` instead of `--ssb 28`, the UE scans the
+GSCNs of the 3 MHz raster of n100 for which the punctured SSB fits in the
+carrier. The SSB offset is the first of the 240 subcarriers of the SSB, before
+puncturing:
+
+```
+[NR_PHY] I Scanning GSCN: 31242, with SSB offset: -33, SSB Freq: 921350000.000000
+[NR_PHY] I Scanning GSCN: 31244, with SSB offset: -20, SSB Freq: 921550000.000000
+[NR_PHY] I Cell Detected with GSCN: 31244, SSB SC offset: -20, SSB Ref: 921550000.000000, PSS Corr peak: 112 dB, PSS Corr Average: 80
 ```
 
 For n100, the SSB position is given with `--ssb`, so the UE does not scan
@@ -257,8 +294,9 @@ docker compose down -t 5
 
 The same scenarios are defined as CI tests in
 `ci-scripts/xml_files/container_5g_rfsim_n100.xml`,
-`container_5g_rfsim_n101_u0_25prb.xml` and
-`container_5g_rfsim_n101_u1_24prb.xml`.
+`container_5g_rfsim_n101_u0_25prb.xml`,
+`container_5g_rfsim_n101_u1_24prb.xml` and
+`container_5g_rfsim_n100_3mhz.xml`.
 
 ## 7. Reference logs
 
@@ -270,6 +308,8 @@ from the `feature/n100-n101-support` branch (2026-09-25):
 | n100, FDD, 5 MHz, 15 kHz       | [gnb-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100/gnb-log.txt)          | [nr-ue-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100/nr-ue-log.txt)          |
 | n101, TDD, 5 MHz, 15 kHz       | [gnb-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/gnb-log.txt) | [nr-ue-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/nr-ue-log.txt) |
 | n101, TDD, 10 MHz, 30 kHz      | [gnb-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/gnb-log.txt) | [nr-ue-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/nr-ue-log.txt) |
+| n100, FDD, 3 MHz, 15 kHz       | [gnb-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/gnb-log.txt)     | [nr-ue-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/nr-ue-log.txt)     |
+| n100, 3 MHz, UE scanning       | [gnb-scan-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/gnb-scan-log.txt) | [nr-ue-scan-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/nr-ue-scan-log.txt) |
 
 > **Note:** The UE logs contain the Ki/OPc of the test SIM configured in
 > `ci-scripts/conf_files/nrue.uicc.conf` and keys derived from them. These are
@@ -284,6 +324,8 @@ Results of the reference run (AWGN channel model):
 | n100, 5 MHz, 15 kHz       | yes    | 0% loss (21.1 ms)       | 0% loss (20.4 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
 | n101, 5 MHz, 15 kHz       | yes    | 0% loss (19.4 ms)       | 0% loss (16.5 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
 | n101, 10 MHz, 30 kHz      | yes    | 0% loss (26.6 ms)       | 0% loss (18.9 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
+| n100, 3 MHz, 15 kHz       | yes    | 0% loss (23.0 ms)       | 0% loss (24.8 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
+| n100, 3 MHz, UE scanning  | yes    | 0% loss (27.8 ms)       | 0% loss (25.7 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
 
 ## 9. Limitations
 
@@ -294,10 +336,23 @@ Results of the reference run (AWGN channel model):
   tested over the air.
 - The OAI nrUE assumes power class 3 (23 dBm). A-MPR and network signalling
   (NS) values of n100 are not implemented.
-- Channel bandwidths below 5 MHz (3 MHz, Rel-18) are not supported.
+- 3 MHz channel bandwidth (Rel-18) limitations:
+  - Only CORESET#0 of 12 RBs (TS 38.213 Table 13-0 index 0 and 1). The 24 RB
+    CORESET#0 punctured to 15 RBs (index 2 to 9) and the additional n100
+    GSCNs 41637 (12 PRB) and 41638 (5 MHz, 20 PRB) are not supported.
+  - The RRC ASN.1 is Rel-17: the Rel-18 UE capabilities for 3 MHz
+    (`support3MHz-ChannelBW-Symmetric-r18`, `SupportedBandwidth-v1840`) are not
+    signalled.
+  - The punctured PBCH needs about 6 dB more SNR than the full PBCH for the
+    same BLER in `nr_pbchsim` (half of the PBCH REs are punctured).
+  - The UE-specific CORESET of BWPs below 24 PRBs has 2 symbols, with 3
+    symbols the OAI UE did not decode the PDCCH after RRCSetup.
 - The gNB logs `nrarfcn ... is not on the channel raster` for PointA and the
   SSB NR-ARFCN. Only the carrier center has to be on the channel raster, and it
   is in all scenarios, so these messages can be ignored.
-- With 5 MHz at 15 kHz on n101 (TDD), the gNB statistics show a large `CCE
-  fail` count for UL: the CORESET has 8 CCEs only. No UL transmission is lost at
-  the tested load.
+- With 5 MHz at 15 kHz on n101 (TDD) and with 3 MHz on n100, the gNB
+  statistics often show a large `CCE fail` count for UL. With n101, it depends
+  on the frequency configuration and on the RNTI: it is much less frequent with
+  PointA 380000 and CORESET#0 index 1 than with the configuration of this
+  tutorial. The cause is not known yet. No UL transmission is lost at the
+  tested load.

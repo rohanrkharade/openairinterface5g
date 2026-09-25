@@ -31,7 +31,7 @@ There is some general information in the [OpenAirInterface Gitlab Wiki](https://
     * [OAI gNB with COTS UE](./NR_SA_Tutorial_COTS_UE.md)
     * [OAI NR-UE](./NR_SA_Tutorial_OAI_nrUE.md)
     * [Multiple OAI NR-UE with RFsimulator](./NR_SA_Tutorial_OAI_multi_UE.md)
-    * [FRMCS bands n100 and n101 end-to-end with RFsimulator in Docker](./NR_SA_Tutorial_FRMCS_n100_n101_RFsim.md)
+    * [FRMCS bands n100 (incl. 3 MHz) and n101 end-to-end with RFsimulator in Docker](./NR_SA_Tutorial_FRMCS_n100_n101_RFsim.md)
 - [RUNMODEM.md](./RUNMODEM.md): Information on how to run the gNB
     * Run simulators
     * Run with hardware

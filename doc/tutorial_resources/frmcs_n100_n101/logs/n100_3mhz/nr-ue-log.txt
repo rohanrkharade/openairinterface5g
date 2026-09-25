@@ -1,0 +1,701 @@
+==================================
+/proc/sys/kernel/core_pattern=|/usr/share/apport/apport -p%p -s%s -c%c -d%d -P%P -u%u -g%g -F%F -- %E
+==================================
+== Configuration file:
+# SPDX-License-Identifier: LicenseRef-CSSL-1.0
+
+uicc0 = {
+  imsi = "208990100001100";
+  key = "fec86ba6eb707ed08905757b1bb44b8f";
+  opc= "C42449363BBAD02B66D16BC975D77CC1";
+  pdu_sessions = ({ dnn = "oai"; nssai_sst = 1; });
+}
+
+position0 = {
+    x = 0.0;
+    y = 0.0;
+    z = 6377900.0;
+}
+
+thread-pool = "-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1"
+
+rfsimulator = (
+  {
+    serveraddr = "127.0.0.1";
+  }
+);
+
+#/* configuration for channel modelisation */
+#/* To be included in main config file when */
+#/* channel modelisation is used (rfsimulator with chanmod options enabled) */
+channelmod = {
+  max_chan = 10;
+  modellist = "modellist_rfsimu_1";
+  modellist_rfsimu_1 = (
+    { # DL, modify on UE side
+      model_name     = "rfsimu_channel_enB0"
+      type           = "AWGN";
+      ploss_dB       = 20;
+      noise_power_dB = -4;
+      forgetfact     = 0;
+      offset         = 0;
+      ds_tdl         = 0;
+    },
+    { # UL, modify on gNB side
+      model_name     = "rfsimu_channel_ue0"
+      type           = "AWGN";
+      ploss_dB       = 20;
+      noise_power_dB = -2;
+      forgetfact     = 0;
+      offset         = 0;
+      ds_tdl         = 0;
+    }
+  );
+};
+==================================
+== Load USRP binaries
+==================================
+== Starting NR UE soft modem
+Additional option(s): --rfsim -r 15 --numerology 0 --band 100 -C 921400000 --CO -45000000 --ssb 28 --rfsimulator.[0].options chanmod --uicc0.imsi 208990100001100 --rfsimulator.[0].serveraddr 192.168.71.140 --log_config.global_log_options level,nocolor,time
+/opt/oai-nr-ue/bin/nr-uesoftmodem -O /opt/oai-nr-ue/etc/nr-ue.conf --rfsim -r 15 --numerology 0 --band 100 -C 921400000 --CO -45000000 --ssb 28 --rfsimulator.[0].options chanmod --uicc0.imsi 208990100001100 --rfsimulator.[0].serveraddr 192.168.71.140 --log_config.global_log_options level,nocolor,time
+CMDLINE: "/opt/oai-nr-ue/bin/nr-uesoftmodem" "-O" "/opt/oai-nr-ue/etc/nr-ue.conf" "--rfsim" "-r" "15" "--numerology" "0" "--band" "100" "-C" "921400000" "--CO" "-45000000" "--ssb" "28" "--rfsimulator.[0].options" "chanmod" "--uicc0.imsi" "208990100001100" "--rfsimulator.[0].serveraddr" "192.168.71.140" "--log_config.global_log_options" "level,nocolor,time" 
+257400.876618 [UTIL]   I running in SA mode (no --phy-test, --do-ra, --nsa option present)
+257400.876656 [UTIL]   I threadCreate() for Tpool0_-1: creating thread with affinity ffffffff, priority 97
+257400.876795 [UTIL]   I threadCreate() for Tpool1_-1: creating thread with affinity ffffffff, priority 97
+257400.876881 [UTIL]   I threadCreate() for Tpool2_-1: creating thread with affinity ffffffff, priority 97
+257400.876944 [UTIL]   I threadCreate() for Tpool3_-1: creating thread with affinity ffffffff, priority 97
+257400.877028 [UTIL]   I threadCreate() for Tpool4_-1: creating thread with affinity ffffffff, priority 97
+257400.877140 [UTIL]   I threadCreate() for Tpool5_-1: creating thread with affinity ffffffff, priority 97
+257400.877205 [UTIL]   I threadCreate() for Tpool6_-1: creating thread with affinity ffffffff, priority 97
+257400.877278 [UTIL]   I threadCreate() for Tpool7_-1: creating thread with affinity ffffffff, priority 97
+257400.877336 [UTIL]   I threadCreate() for Tpool8_-1: creating thread with affinity ffffffff, priority 97
+257400.877416 [UTIL]   I threadCreate() for Tpool9_-1: creating thread with affinity ffffffff, priority 97
+257400.877481 [UTIL]   I threadCreate() for Tpool10_-1: creating thread with affinity ffffffff, priority 97
+257400.877553 [UTIL]   I threadCreate() for Tpool11_-1: creating thread with affinity ffffffff, priority 97
+257401.878128 [OPT]    I OPT disabled
+257401.878536 [HW]     I Version: Branch:  Abrev. Hash:  Date: 
+257401.878571 [NR_RRC] I create TASK_RRC_NRUE 
+257401.878580 [UTIL]   I threadCreate() for TASK_RRC_NRUE: creating thread with affinity ffffffff, priority 50
+257401.878735 [UTIL]   I threadCreate() for TASK_NAS_NRUE: creating thread with affinity ffffffff, priority 50
+257401.879021 [SIM]    I UICC simulation: IMSI=208990100001100, IMEISV=6754567890123413, Ki=fec86ba6eb707ed08905757b1bb44b8f, OPc=C42449363BBAD02B66D16BC975D77CC1
+257401.879097 [SIM]    I overriding potential uicc0.dnn/nssai_sst/nssai_sd from uicc0.pdu_sessions
+257401.879100 [SIM]    I will request PDU session ID 1, type 1, DNN oai, NSSAI 1.ffffff
+257401.879218 [NR_MAC] I [UE0] Initializing MAC
+257401.879233 [NR_MAC] I Initializing dl and ul config_request. num_slots = 10
+257401.879303 [RLC]    I Activated srb0 for UE 0
+257401.879316 [UTIL]   I threadCreate() for timer thread: creating thread with affinity ffffffff, priority 2
+257401.879412 [UTIL]   I threadCreate() for time source iq samples: creating thread with affinity ffffffff, priority 2
+257401.879490 [UTIL]   I time manager configuration: [time source: iq_samples] [mode: standalone] [server IP: 127.0.0.1} [server port: 7374] (server IP/port not used)
+257401.879498 [PHY]    I Set UE nb_rx_antenna 1, nb_tx_antenna 1, threequarter_fs 0, ofdm_offset_divisor 8
+257401.879507 [PHY]    I SA init parameters. DL freq 921400000 UL offset -45000000 SSB numerology 0 N_RB_DL 15
+257401.879512 [PHY]    I Init: N_RB_DL 15, first_carrier_offset 422, nb_prefix_samples 36,nb_prefix_samples0 40, ofdm_symbol_size 512
+257401.879515 [PHY]    W samples_per_subframe 7680/per second 7680000, wCP 7168
+257401.879517 [PHY]    I Set UE_fo_compensation 0, UE_scan_carrier 0, UE_no_timing_correction 0 
+, chest-freq 0, chest-time 0
+257401.880847 [UTIL]   I threadCreate() for SYNC__actor: creating thread with affinity ffffffff, priority 97
+257401.881024 [UTIL]   I threadCreate() for DL__actor: creating thread with affinity ffffffff, priority 97
+257401.881130 [UTIL]   I threadCreate() for DL__actor: creating thread with affinity ffffffff, priority 97
+257401.881228 [UTIL]   I threadCreate() for DL__actor: creating thread with affinity ffffffff, priority 97
+257401.881290 [UTIL]   I threadCreate() for DL__actor: creating thread with affinity ffffffff, priority 97
+257401.881387 [UTIL]   I threadCreate() for UL__actor: creating thread with affinity ffffffff, priority 97
+257401.881449 [UTIL]   I threadCreate() for UL__actor: creating thread with affinity ffffffff, priority 97
+257401.881544 [PHY]    I Initializing UE vars for gNB TXant 1, UE RXant 1
+257402.067668 [PHY]    I prs_config configuration NOT found..!! Skipped configuring UE for the PRS reception
+257402.073754 [PHY]    I HW: Configuring ru_id 0, sample_rate 7680000.000000, tx/rx num_channels 1/1, duplex_mode FDD
+257402.073774 [PHY]    I HW: Configuring channel 0 (rf_chain 0): setting tx_freq 876400000 Hz, rx_freq 921400000 Hz, tune_offset 0
+257402.073778 [PHY]    I HW: Configuring channel 0 (rf_chain 0): setting tx_gain 0, rx_gain 110
+257402.073784 [UTIL]   W mlockall() failed: 12, Cannot allocate memory
+257402.073792 [UTIL]   I threadCreate() for ru_start_thread: creating thread with affinity ffffffff, priority 97
+257402.074397 [OCM]    I Channel Model (inside of new_channel_desc_scm)=23
+
+257402.074403 [OCM]    I [CHANNEL] Getting new channel descriptor, nb_tx 1, nb_rx 1, nb_taps 1, channel_length 1
+257402.074414 [OCM]    I Model rfsimu_channel_enB0 type AWGN allocated from config file, list modellist_rfsimu_1
+257402.074418 [OCM]    I Channel Model (inside of new_channel_desc_scm)=23
+
+257402.074420 [OCM]    I [CHANNEL] Getting new channel descriptor, nb_tx 1, nb_rx 1, nb_taps 1, channel_length 1
+257402.074445 [OCM]    I Model rfsimu_channel_ue0 type AWGN allocated from config file, list modellist_rfsimu_1
+257402.074449 [HW]     I Running as client: will connect to a rfsimulator server side
+257402.074575 [HW]     I [RAU] has loaded RFSIMULATOR device.
+257402.074581 [HW]     I Trying to connect to 192.168.71.140:4043
+257402.074750 [HW]     I connect() to 192.168.71.140:4043 failed, errno(111)
+257403.074766 [HW]     I Trying to connect to 192.168.71.140:4043
+257403.074892 [HW]     I Connection to 192.168.71.140:4043 established
+257403.074932 [HW]     I Random channel rfsimu_channel_enB0 in rfsimulator activated
+257403.074987 [HW]     A RFsim: Number of antennas changed from 0 to 1
+257403.075049 [PHY]    I Intializing UE Threads for instance 0 ...
+257403.075062 [UTIL]   I threadCreate() for UEthread_0: creating thread with affinity ffffffff, priority 97
+257403.075274 [UTIL]   I threadCreate() for L1_UE_stats_0: creating thread with affinity ffffffff, priority 1
+257403.575256 [PHY]    W SSB position provided
+257403.575322 [NR_PHY] W Starting sync detection
+257403.575331 [PHY]    I [UE thread Synch] Running Initial Synch 
+257403.575336 [NR_PHY] I Starting cell search with center freq: 921400000, bandwidth: 15. Scanning for 1 number of GSCN.
+257403.575753 [NR_PHY] I Scanning GSCN: 0, with SSB offset: -20, SSB Freq: 0.000000
+257403.586920 [PHY]    A Initial sync: pbch decoded sucessfully, ssb index 0
+257403.586929 [PHY]    I pbch rx ok. rsrp:71 dB/RE, adjust_rxgain:-21 dB
+257403.586941 [NR_PHY] I Cell Detected with GSCN: 0, SSB SC offset: -20, SSB Ref: 0.000000, PSS Corr peak: 112 dB, PSS Corr Average: 80
+257403.587062 [PHY]    I [UE0] In synch, rx_offset 76800 samples
+257403.587067 [PHY]    I [UE 0] Measured Carrier Frequency offset 1 Hz
+257403.587069 [PHY]    A Initial sync successful, PCI: 0
+257403.587072 [PHY]    I HW: Configuring channel 0 (rf_chain 0): setting tx_freq 876400001 Hz, rx_freq 921400001 Hz, tune_offset 0
+257403.587091 [PHY]    I Got synch: hw_slot_offset 20, carrier off 1 Hz
+257403.587195 [NR_RRC] I [UE 0] RNTI 0x0000 BCCH update: phyCellID 0->0, arfcn_ssb 0->184310
+257403.593389 [PHY]    A UE synchronized! decoded_frame_rx=166 skipped_frames=6
+257403.593398 [PHY]    I Resynchronizing RX by 76800 samples
+257403.597597 [HW]     I received write reorder clear context
+257403.597606 [PHY]    I max_pos_acc = 0, shiftForNextFrame = 0
+257403.601410 [NR_RRC] A [UE 0] RNTI 0x0000 SIB1 decoded
+257403.601789 [NR_MAC] I [UE 0] Initial cell selection: dl_frequency=920050 kHz (from command-line, band=100, scs=0)
+257403.601803 [NR_MAC] E nrarfcn 175010 is not on the channel raster for step size 20. N_OFFS:174880
+257403.601806 [NR_MAC] I Computing frequency (nrarfcn 175010 => 875050 KHz, NR band 100
+257403.601809 [NR_MAC] I Initial cell selection: uplink_frequency=875050 kHz (from absoluteFrequencyPointA=175010, band=100, scs=0)
+257403.602534 [PHY]    I N_TA_offset changed from 0 to 100
+257403.603511 [MAC]    I Initialization of 4-Step CBRA procedure
+257403.603532 [NR_MAC] I [UE 0] selected PRACH occasion: start_symbol 0 fdm 0 slot 4 format 0
+257403.606158 [NR_MAC] I PRACH scheduler: Selected RO Frame 173, Slot 4, Symbol 0, Fdm 0
+257403.606674 [PHY]    I PRACH [UE 0] in frame.slot 173.4, placing PRACH in position 10142, Msg1/MsgA-Preamble frequency start 0 (k1 0), preamble_offset 6, first_nonzero_root_idx 0, preambleIndex = 46
+257403.611351 [PHY]    I [UE 0] RAR-Msg2 decoded
+257403.611362 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got BI RAR subPDU 5 ms
+257403.611365 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got RAPID RAR subPDU
+257403.611368 [NR_MAC] W [UE 0][RAPROC][174.1] Received RAR preamble (45) doesn't match the intended RAPID (46)
+257403.613109 [MAC]    W [UE 0] RAR reception failed
+257403.613159 [NR_MAC] I [UE 0] selected PRACH occasion: start_symbol 0 fdm 0 slot 4 format 0
+257403.615125 [NR_MAC] I PRACH scheduler: Selected RO Frame 175, Slot 4, Symbol 0, Fdm 0
+257403.615138 [PHY]    I PRACH [UE 0] in frame.slot 175.4, placing PRACH in position 10142, Msg1/MsgA-Preamble frequency start 0 (k1 0), preamble_offset 1, first_nonzero_root_idx 0, preambleIndex = 9
+257403.620276 [PHY]    I [UE 0] RAR-Msg2 decoded
+257403.620285 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got BI RAR subPDU 5 ms
+257403.620288 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got RAPID RAR subPDU
+257403.620290 [NR_MAC] W [UE 0][RAPROC][176.1] Received RAR preamble (13) doesn't match the intended RAPID (9)
+257403.622117 [MAC]    W [UE 0] RAR reception failed
+257403.622172 [NR_MAC] I [UE 0] selected PRACH occasion: start_symbol 0 fdm 0 slot 4 format 0
+257403.624092 [NR_MAC] I PRACH scheduler: Selected RO Frame 177, Slot 4, Symbol 0, Fdm 0
+257403.624109 [PHY]    I PRACH [UE 0] in frame.slot 177.4, placing PRACH in position 10142, Msg1/MsgA-Preamble frequency start 0 (k1 0), preamble_offset 2, first_nonzero_root_idx 0, preambleIndex = 19
+257403.629748 [PHY]    I [UE 0] RAR-Msg2 decoded
+257403.629758 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got BI RAR subPDU 5 ms
+257403.629761 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got RAPID RAR subPDU
+257403.629764 [NR_MAC] W [UE 0][RAPROC][178.1] Received RAR preamble (14) doesn't match the intended RAPID (19)
+257403.631449 [MAC]    W [UE 0] RAR reception failed
+257403.631505 [NR_MAC] I [UE 0] selected PRACH occasion: start_symbol 0 fdm 0 slot 4 format 0
+257403.634677 [NR_MAC] I PRACH scheduler: Selected RO Frame 179, Slot 4, Symbol 0, Fdm 0
+257403.634695 [PHY]    I PRACH [UE 0] in frame.slot 179.4, placing PRACH in position 10142, Msg1/MsgA-Preamble frequency start 0 (k1 0), preamble_offset 2, first_nonzero_root_idx 0, preambleIndex = 20
+257403.640719 [PHY]    I [UE 0] RAR-Msg2 decoded
+257403.640729 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got BI RAR subPDU 5 ms
+257403.640732 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got RAPID RAR subPDU
+257403.640734 [NR_MAC] W [UE 0][RAPROC][180.1] Received RAR preamble (17) doesn't match the intended RAPID (20)
+257403.641867 [MAC]    W [UE 0] RAR reception failed
+257403.641912 [NR_MAC] I [UE 0] selected PRACH occasion: start_symbol 0 fdm 0 slot 4 format 0
+257403.644831 [NR_MAC] I PRACH scheduler: Selected RO Frame 181, Slot 4, Symbol 0, Fdm 0
+257403.644845 [PHY]    I PRACH [UE 0] in frame.slot 181.4, placing PRACH in position 10142, Msg1/MsgA-Preamble frequency start 0 (k1 0), preamble_offset 3, first_nonzero_root_idx 0, preambleIndex = 25
+257403.648982 [PHY]    I [UE 0] RAR-Msg2 decoded
+257403.648994 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got BI RAR subPDU 5 ms
+257403.648997 [NR_MAC] I [UE 0][RAPROC][RA-RNTI 0039] Got RAPID RAR subPDU
+257403.648999 [NR_MAC] A [UE 0][RAPROC][182.1] Found RAR with the intended RAPID 25
+257403.650766 [NR_MAC] A [RAPROC][182.9] RA-Msg3 transmitted
+257403.655942 [NR_MAC] A [UE 0][183.8][RAPROC] 4-Step RA procedure succeeded. CBRA: Contention Resolution is successful.
+257403.655994 [NR_RRC] I [UE 0] RNTI 0xae6f [RAPROC] Logical Channel DL-CCCH (SRB0), Received NR_RRCSetup
+257403.656137 [RLC]    I Added srb 1 to UE 0
+257403.656144 [NR_RRC] I [UE 0] RNTI 0xae6f State = NR_RRC_CONNECTED
+257403.656153 [NAS]    I Generate Initial NAS Message: Registration Request
+257403.656163 [NR_RRC] I [UE 0] RNTI 0xae6f [RAPROC] Logical Channel UL-DCCH (SRB1), Generating RRCSetupComplete (bytes33)
+257403.656201 [NAS]    I [UE 0] Received NR_NAS_CONN_ESTABLISH_IND: asCause 0
+257403.656388 [MAC]    I [UE 0] Applying CellGroupConfig from gNodeB
+257403.731449 [NAS]    I [UE 0] Received NAS_DOWNLINK_DATA_IND type FGS_AUTHENTICATION_REQUEST with length 42
+257403.754455 [NAS]    I [UE 0] Received NAS_DOWNLINK_DATA_IND type FGS_SECURITY_MODE_COMMAND with length 21
+257403.757076 [NAS]    I Generate Initial NAS Message: Registration Request
+257403.785962 [NR_RRC] I [UE 0] RNTI 0xae6f Received securityModeCommand (gNB 0)
+257403.785971 [NR_RRC] I [UE 0] RNTI 0xae6f Receiving from SRB1 (DL-DCCH), Processing securityModeCommand
+257403.785973 [NR_RRC] I [UE 0] RNTI 0xae6f Security algorithm is set to nea0
+257403.785975 [NR_RRC] I [UE 0] RNTI 0xae6f Integrity protection algorithm is set to nia2
+257403.789774 [NR_RRC] I [UE 0] RNTI 0xae6f Receiving from SRB1 (DL-DCCH), encoding securityModeComplete, rrc_TransactionIdentifier: 0
+257403.806984 [NR_RRC] I [UE 0] RNTI 0xae6f Received Capability Enquiry (gNB 0)
+257403.806993 [NR_RRC] I [UE 0] RNTI 0xae6f Receiving from SRB1 (DL-DCCH), Processing UECapabilityEnquiry
+[CONFIG] function config_libconfig_init returned 0
+AWGN: ricean_factor 0.000000
+AWGN: ricean_factor 0.000000
+Initializing random number generator, seed 792549441194785578
+TYPE <CTRL-C> TO TERMINATE
+kausf:52 c2 d5 1 1d 2e 6f fa 28 e6 db 26 44 43 54 54 10 c3 25 ca e2 5 26 e8 cc e8 25 de 42 8d e0 e3 
+kseaf:28 40 dd 4a bb a7 e5 d1 7f e0 ef 14 ce 25 e9 0 4 b6 e3 7c 0 37 11 bc 20 6 56 6d 56 3e 6 7e 
+kamf:be 1f fe 96 51 0 92 93 47 52 56 3f ce a0 78 b6 e2 59 1c c4 17 21 3e 73 52 65 a9 3d 7a d 30 4c 
+knas_int: 3a 9d 96 b4 d2 6d d4 45 70 17 30 93 8b 82 e7 be 
+knas_enc: 8 34 a0 bc ff 15 e0 ae bd 6f 8e a1 d7 b2 9f dd 
+mac 13 e5 43 89 
+257403.788240 [NR_RRC] I deriving kRRCenc, kRRCint from KgNB=a4 c3 82 44 5e 4d 9e 4f b6 7d c9 84 20 d5 0e 50 3a a8 b6 f9 fd e3 01 3b 60 d8 00 75 93 10 d7 2e 
+257403.789802 [NR_RRC] I securityModeComplete payload: 28 00 00 00 00 00 00 00 80 34 00 a0 43 79 00 00 
+<UE-NR-Capability>
+    <accessStratumRelease><rel15/></accessStratumRelease>
+    <pdcp-Parameters>
+        <supportedROHC-Profiles>
+            <profile0x0000><false/></profile0x0000>
+            <profile0x0001><false/></profile0x0001>
+            <profile0x0002><false/></profile0x0002>
+            <profile0x0003><false/></profile0x0003>
+            <profile0x0004><false/></profile0x0004>
+            <profile0x0006><false/></profile0x0006>
+            <profile0x0101><false/></profile0x0101>
+            <profile0x0102><false/></profile0x0102>
+            <profile0x0103><false/></profile0x0103>
+            <profile0x0104><false/></profile0x0104>
+        </supportedROHC-Profiles>
+        <maxNumberROHC-ContextSessions><cs2/></maxNumberROHC-ContextSessions>
+    </pdcp-Parameters>
+    <phy-Parameters>
+    </phy-Parameters>
+    <rf-Parameters>
+        <supportedBandListNR>
+            <BandNR>
+                <bandNR>100</bandNR>
+            </BandNR>
+        </supportedBandListNR>
+    </rf-Parameters>
+</UE-NR-Capability>
+257403.807446 [NR_RRC] I [UE 0] RNTI 0xae6f NR Capability encoded, 10 bytes (86 bits)
+257403.807479 [NR_RRC] I [UE 0] RNTI 0xae6f UECapabilityInformation Encoded 106 bits (14 bytes)
+257403.826446 [NAS]    I [UE 0] Received NAS_DOWNLINK_DATA_IND type FGS_REGISTRATION_ACCEPT with length 53
+257403.826459 [NAS]    I Received Registration Accept with result 3GPP
+257403.826462 [NAS]    I SMS not allowed in 5GS Registration Result
+257403.826465 [NR_RRC] I 5G-GUTI: AMF pointer 1, AMF Set ID 1, 5G-TMSI 2074487556 
+257403.826476 [NR_MAC] I [UE 0] paging UE_ID=772
+257403.826479 [NAS]    I Send NAS_UPLINK_DATA_REQ message(RegistrationComplete)
+257403.826482 [NAS]    I requested PDU session ID 1 type 1 NSSAI 1.16777215 DNN oai
+257403.826498 [NAS]    I Send NAS_UPLINK_DATA_REQ message(PduSessionEstablishRequest)
+257403.890666 [RLC]    I Added srb 2 to UE 0
+257403.890702 [RLC]    I Added drb 1 to UE 0
+257403.890707 [RLC]    I Added DRB to UE 0
+257403.890711 [NR_RRC] I [UE 0] RNTI 0xae6f RRCReconfiguration includes radio Bearer Configuration
+257403.890770 [MAC]    I [UE 0] Applying CellGroupConfig from gNodeB
+257403.895888 [SDAP]   W  Could not find SDAP entity: entity list empty (ue_id=0 pdu_session_id=1)
+257403.895897 [SDAP]   I Creating SDAP entity ue_id=0 pdu_session_id=1
+257403.895899 [SDAP]   I Default DRB for the created SDAP entity: DRB 1 
+257403.895903 [PDCP]   I Added DRB 1 to UE ID 0
+257403.895906 [NR_RRC] I [UE 0] RNTI 0xae6f State = NR_RRC_CONNECTED
+257403.895915 [NR_RRC] I [UE 0] RNTI 0xae6f RRCReconfiguration includes Measurement Configuration
+257403.895921 [NR_RRC] W Measurement gaps not yet supported!
+257403.895923 [NAS]    I [UE 0] Received NAS_CONN_ESTABLI_CNF: errCode 1, length 98
+257403.895929 [NR_RRC] I rrcReconfigurationComplete Encoded 10 bits (2 bytes)
+257403.895932 [NR_RRC] I [UE 0] RNTI 0xae6f  Logical Channel UL-DCCH (SRB1), Generating RRCReconfigurationComplete (bytes 2)
+257403.895938 [NAS]    I Received PDU Session Establishment Accept, UE IPv4: 12.1.1.2
+257403.895961 [NR_RRC] I MeasurementReport Encoded 53 bits (7 bytes)
+257403.896236 [SDAP]   I UE 0 PDU session 1: cached QFI 1
+257403.896240 [SDAP]   I UE 0 PDU session 1: bringing TUN oaitun_ue1 up
+257403.896398 [UTIL]   I threadCreate() for ue_tun_read_0_p1: creating thread with affinity ffffffff, priority 1
+/oai-ran/openair3/NAS/NR_UE/5GS/5GSM/MSG/PduSessionEstablishmentAccept.c:192: Unknown IEI 129
+257403.896694 [OIP]    A TUN Interface oaitun_ue1 successfully configured, IPv4 12.1.1.2, IPv6 (null)
+257404.019155 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 27/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 0.4, nb symbols 0.9)
+    UL harq: 45/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.8, nb symbols 13.0)
+257404.128975 [NR_MAC] I [282.1] Received TA_COMMAND 29 TAGID 0 CC_id 0 
+257404.374731 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257404.620899 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 29.3 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 30/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 0.8, nb symbols 2.0)
+    UL harq: 61/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.1, nb symbols 13.0)
+257404.883254 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257405.281398 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 32/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 1.1, nb symbols 2.6)
+    UL harq: 76/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.7, nb symbols 13.0)
+257405.430136 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257405.957401 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.6 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 40/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 2.8, nb symbols 4.5)
+    UL harq: 113/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.9, nb symbols 13.0)
+257405.977116 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257406.543416 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257406.661887 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.3 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 45/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 3.5, nb symbols 5.3)
+    UL harq: 142/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257407.067364 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257407.293961 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.4 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 50/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 4.0, nb symbols 6.0)
+    UL harq: 169/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.7, nb symbols 13.0)
+257407.552596 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257407.902895 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.6 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 58/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 4.8, nb symbols 6.8)
+    UL harq: 208/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257408.054533 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257408.550103 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 62/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 5.1, nb symbols 7.2)
+    UL harq: 235/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257408.582810 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257409.102161 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257409.206041 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.6 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 68/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 5.4, nb symbols 7.6)
+    UL harq: 265/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.7, nb symbols 13.0)
+257409.680938 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257409.913740 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.6 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 76/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 5.8, nb symbols 8.1)
+    UL harq: 298/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257410.205788 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257410.561254 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.0 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 80/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.0, nb symbols 8.2)
+    UL harq: 323/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257410.723555 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257411.187013 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.0 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 84/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.2, nb symbols 8.4)
+    UL harq: 346/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.7, nb symbols 13.0)
+257411.237483 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257411.783983 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257411.869208 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.5 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 91/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.3, nb symbols 8.7)
+    UL harq: 382/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.7, nb symbols 13.0)
+257412.331354 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257412.556026 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.0 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 99/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.6, nb symbols 9.0)
+    UL harq: 413/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257412.867750 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257413.192658 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.3 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 104/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.6, nb symbols 9.1)
+    UL harq: 438/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257413.364697 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257413.797362 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.9 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 108/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.7, nb symbols 9.2)
+    UL harq: 459/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257413.859292 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257414.358117 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257414.430455 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.3 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 116/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.7, nb symbols 9.4)
+    UL harq: 484/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257414.904127 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257415.104272 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 123/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 9.6)
+    UL harq: 512/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257415.446507 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257415.799565 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.3 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 136/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.1, nb symbols 9.8)
+    UL harq: 548/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.9, nb symbols 13.0)
+257416.026575 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257416.517591 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.6 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 150/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.3, nb symbols 10.0)
+    UL harq: 593/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 6.9, nb symbols 13.0)
+257416.599147 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257417.185685 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257417.242515 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 166/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.5, nb symbols 10.2)
+    UL harq: 644/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.1, nb symbols 13.0)
+257417.779664 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257417.982483 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.4 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 177/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.6, nb symbols 10.3)
+    UL harq: 682/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.2, nb symbols 13.0)
+257418.368203 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257418.718318 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 189/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.7, nb symbols 10.4)
+    UL harq: 728/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.3, nb symbols 13.0)
+257418.967149 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257419.414749 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.7 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 195/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.7, nb symbols 10.5)
+    UL harq: 753/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.2, nb symbols 13.0)
+257419.500622 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257420.029662 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257420.068033 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 30.4 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 209/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.8, nb symbols 10.6)
+    UL harq: 805/0 avg code rate 0.1, avg bit/symbol 2.0, avg per TB: (nb RBs 7.4, nb symbols 13.0)
+257420.607259 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257420.777368 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.6 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 1325/0 avg code rate 0.4, avg bit/symbol 2.5, avg per TB: (nb RBs 13.8, nb symbols 11.8)
+    UL harq: 856/0 avg code rate 0.2, avg bit/symbol 2.1, avg per TB: (nb RBs 7.2, nb symbols 13.0)
+257421.158423 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257421.483013 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 29.3 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 1765/0 avg code rate 0.5, avg bit/symbol 3.4, avg per TB: (nb RBs 13.4, nb symbols 11.8)
+    UL harq: 927/0 avg code rate 0.3, avg bit/symbol 2.7, avg per TB: (nb RBs 7.1, nb symbols 13.0)
+257421.745161 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257422.213536 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 26.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 2143/0 avg code rate 0.7, avg bit/symbol 4.1, avg per TB: (nb RBs 12.8, nb symbols 11.9)
+    UL harq: 999/0 avg code rate 0.6, avg bit/symbol 3.5, avg per TB: (nb RBs 6.9, nb symbols 13.0)
+257422.331541 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257422.912519 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257422.935231 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 2518/0 avg code rate 0.7, avg bit/symbol 4.5, avg per TB: (nb RBs 12.4, nb symbols 11.9)
+    UL harq: 1075/0 avg code rate 0.7, avg bit/symbol 4.0, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257423.471828 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257423.634954 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 26.9 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 2869/0 avg code rate 0.8, avg bit/symbol 4.7, avg per TB: (nb RBs 12.1, nb symbols 11.9)
+    UL harq: 1147/0 avg code rate 0.7, avg bit/symbol 4.3, avg per TB: (nb RBs 6.7, nb symbols 13.0)
+257424.060508 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257424.365093 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 3246/0 avg code rate 0.8, avg bit/symbol 4.9, avg per TB: (nb RBs 11.9, nb symbols 11.9)
+    UL harq: 1219/0 avg code rate 0.8, avg bit/symbol 4.6, avg per TB: (nb RBs 6.6, nb symbols 13.0)
+257424.651507 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257425.102078 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.7 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 3582/0 avg code rate 0.8, avg bit/symbol 5.1, avg per TB: (nb RBs 11.8, nb symbols 11.9)
+    UL harq: 1281/0 avg code rate 0.8, avg bit/symbol 4.7, avg per TB: (nb RBs 6.5, nb symbols 13.0)
+257425.247324 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257425.879639 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257425.885223 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 3898/0 avg code rate 0.8, avg bit/symbol 5.2, avg per TB: (nb RBs 11.8, nb symbols 11.9)
+    UL harq: 1336/0 avg code rate 0.8, avg bit/symbol 4.8, avg per TB: (nb RBs 6.4, nb symbols 13.0)
+257426.472255 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257426.620605 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.4 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 4272/0 avg code rate 0.8, avg bit/symbol 5.3, avg per TB: (nb RBs 11.6, nb symbols 11.9)
+    UL harq: 1407/0 avg code rate 0.8, avg bit/symbol 5.0, avg per TB: (nb RBs 6.4, nb symbols 13.0)
+257427.067029 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257427.374452 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.5 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 4665/0 avg code rate 0.9, avg bit/symbol 5.3, avg per TB: (nb RBs 11.5, nb symbols 11.9)
+    UL harq: 1478/0 avg code rate 0.8, avg bit/symbol 5.0, avg per TB: (nb RBs 6.3, nb symbols 13.0)
+257427.666949 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257428.119939 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 29.7 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 5051/0 avg code rate 0.9, avg bit/symbol 5.4, avg per TB: (nb RBs 11.4, nb symbols 11.9)
+    UL harq: 1552/0 avg code rate 0.8, avg bit/symbol 5.1, avg per TB: (nb RBs 6.2, nb symbols 13.0)
+257428.280559 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257428.882376 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 26.5 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 5434/0 avg code rate 0.9, avg bit/symbol 5.4, avg per TB: (nb RBs 11.3, nb symbols 11.9)
+    UL harq: 1626/0 avg code rate 0.8, avg bit/symbol 5.2, avg per TB: (nb RBs 6.2, nb symbols 13.0)
+257428.894030 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257429.496089 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257429.626925 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 26.9 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 5824/0 avg code rate 0.9, avg bit/symbol 5.5, avg per TB: (nb RBs 11.2, nb symbols 11.9)
+    UL harq: 1702/0 avg code rate 0.9, avg bit/symbol 5.3, avg per TB: (nb RBs 6.1, nb symbols 13.0)
+257430.104477 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257430.381036 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 29.0 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 6213/0 avg code rate 0.9, avg bit/symbol 5.5, avg per TB: (nb RBs 11.1, nb symbols 12.0)
+    UL harq: 1778/0 avg code rate 0.9, avg bit/symbol 5.3, avg per TB: (nb RBs 6.1, nb symbols 13.0)
+257430.709283 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257431.159287 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 26.5 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 6610/0 avg code rate 0.9, avg bit/symbol 5.5, avg per TB: (nb RBs 11.1, nb symbols 12.0)
+    UL harq: 1850/0 avg code rate 0.9, avg bit/symbol 5.4, avg per TB: (nb RBs 6.0, nb symbols 13.0)
+257431.337218 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257431.931506 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 7000/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 11.0, nb symbols 12.0)
+    UL harq: 1920/0 avg code rate 0.9, avg bit/symbol 5.4, avg per TB: (nb RBs 6.0, nb symbols 13.0)
+257431.962191 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257432.574228 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257432.690155 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.9 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 7391/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 11.0, nb symbols 12.0)
+    UL harq: 1994/0 avg code rate 0.9, avg bit/symbol 5.4, avg per TB: (nb RBs 6.0, nb symbols 13.0)
+257433.159077 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257433.431813 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 7776/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 10.9, nb symbols 12.0)
+    UL harq: 2072/0 avg code rate 0.9, avg bit/symbol 5.5, avg per TB: (nb RBs 5.9, nb symbols 13.0)
+257433.777647 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257434.192138 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.0 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 8161/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 10.9, nb symbols 12.0)
+    UL harq: 2145/0 avg code rate 0.9, avg bit/symbol 5.5, avg per TB: (nb RBs 5.9, nb symbols 13.0)
+257434.384316 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257434.949418 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 8552/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.8, nb symbols 12.0)
+    UL harq: 2218/0 avg code rate 0.9, avg bit/symbol 5.5, avg per TB: (nb RBs 5.9, nb symbols 13.0)
+257434.992512 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257435.591664 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257435.711541 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.7 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 8947/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.8, nb symbols 12.0)
+    UL harq: 2289/0 avg code rate 0.9, avg bit/symbol 5.5, avg per TB: (nb RBs 5.8, nb symbols 13.0)
+257436.224522 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257436.478119 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 9344/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.8, nb symbols 12.0)
+    UL harq: 2364/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 5.8, nb symbols 13.0)
+257436.831043 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257437.228348 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 9733/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.7, nb symbols 12.0)
+    UL harq: 2436/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 5.8, nb symbols 13.0)
+257437.436829 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257437.975990 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.9 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 10122/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.7, nb symbols 12.0)
+    UL harq: 2511/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 5.8, nb symbols 13.0)
+257438.043453 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257438.638661 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257438.716372 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.9 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 10507/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.7, nb symbols 12.0)
+    UL harq: 2583/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 5.7, nb symbols 13.0)
+257439.231940 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257439.451026 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 30.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 10887/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.7, nb symbols 12.0)
+    UL harq: 2655/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 5.7, nb symbols 13.0)
+257439.819405 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257440.190143 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11270/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.6, nb symbols 12.0)
+    UL harq: 2731/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 5.7, nb symbols 13.0)
+257440.422197 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257440.955358 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11306/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.6, nb symbols 12.0)
+    UL harq: 2759/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 5.7, nb symbols 13.0)
+257441.036395 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257441.632240 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257441.697508 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.3 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11319/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.6, nb symbols 12.0)
+    UL harq: 2812/0 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 5.7, nb symbols 13.0)
+257442.239633 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257442.445113 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 29.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11361/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.6, nb symbols 12.0)
+    UL harq: 3181/0 avg code rate 0.8, avg bit/symbol 5.5, avg per TB: (nb RBs 6.5, nb symbols 13.0)
+257442.836991 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257443.176467 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.2 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11408/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.6, nb symbols 12.0)
+    UL harq: 3417/0 avg code rate 0.8, avg bit/symbol 5.6, avg per TB: (nb RBs 6.6, nb symbols 13.0)
+257443.413567 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257443.911408 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.6 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11454/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.6, nb symbols 12.0)
+    UL harq: 3652/2 avg code rate 0.9, avg bit/symbol 5.6, avg per TB: (nb RBs 6.8, nb symbols 13.0)
+257444.005058 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257444.581379 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257444.628727 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.4 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11498/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.5, nb symbols 12.0)
+    UL harq: 3883/2 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 6.9, nb symbols 13.0)
+257445.160499 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257445.354116 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 26.4 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11542/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.5, nb symbols 12.0)
+    UL harq: 4113/3 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 7.1, nb symbols 13.0)
+257445.726897 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257446.025395 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.0 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11585/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.5, nb symbols 12.0)
+    UL harq: 4339/4 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 7.2, nb symbols 13.0)
+257446.263546 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257446.738381 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.0 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11626/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.5, nb symbols 12.0)
+    UL harq: 4567/6 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 7.3, nb symbols 13.0)
+257446.853681 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257447.450442 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257447.477365 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 29.7 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11668/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.5, nb symbols 12.0)
+    UL harq: 4811/7 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 7.4, nb symbols 13.0)
+257448.039488 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257448.222641 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11716/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.4, nb symbols 12.0)
+    UL harq: 5039/8 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 7.5, nb symbols 13.0)
+257448.625473 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257448.930293 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.7 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11754/0 avg code rate 0.9, avg bit/symbol 5.7, avg per TB: (nb RBs 10.4, nb symbols 12.0)
+    UL harq: 5283/9 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 7.5, nb symbols 13.0)
+257449.195559 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257449.632198 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.0 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11796/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.4, nb symbols 12.0)
+    UL harq: 5517/10 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 7.6, nb symbols 13.0)
+257449.769889 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257450.383025 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257450.394560 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11843/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.4, nb symbols 12.0)
+    UL harq: 5759/12 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 7.7, nb symbols 13.0)
+257450.974821 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257451.128193 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.0 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11885/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.4, nb symbols 12.0)
+    UL harq: 6001/16 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 7.7, nb symbols 13.0)
+257451.539918 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257451.830558 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11928/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.3, nb symbols 12.0)
+    UL harq: 6240/18 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 7.8, nb symbols 13.0)
+257452.116883 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257452.528122 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.2 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 11972/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.3, nb symbols 12.0)
+    UL harq: 6470/18 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 7.8, nb symbols 13.0)
+257452.670255 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257453.296344 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.7 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12018/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.3, nb symbols 12.0)
+    UL harq: 6712/18 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 7.9, nb symbols 13.0)
+257453.301203 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257453.877947 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257454.025832 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.4 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12061/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.3, nb symbols 12.0)
+    UL harq: 6946/18 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 7.9, nb symbols 13.0)
+257454.540174 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257454.808825 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.6 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12098/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.3, nb symbols 12.0)
+    UL harq: 7180/19 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 8.0, nb symbols 13.0)
+257455.101546 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257455.507600 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 256.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.6 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12141/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.2, nb symbols 12.0)
+    UL harq: 7413/21 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 8.0, nb symbols 13.0)
+257455.671393 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257456.237956 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 384.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 29.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12185/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.2, nb symbols 12.0)
+    UL harq: 7651/21 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 8.0, nb symbols 13.0)
+257456.260570 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257457.759256 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257457.887415 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 512.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.2 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12220/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.2, nb symbols 12.0)
+    UL harq: 7976/23 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 8.2, nb symbols 13.0)
+257458.383960 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257458.648170 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 640.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.2 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12259/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.2, nb symbols 12.0)
+    UL harq: 8223/24 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 8.2, nb symbols 13.0)
+257458.964508 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257459.367196 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 768.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.8 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12306/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.2, nb symbols 12.0)
+    UL harq: 8454/26 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 8.3, nb symbols 13.0)
+257459.543955 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257460.089150 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 896.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.1 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12344/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.2, nb symbols 12.0)
+    UL harq: 8694/26 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 8.3, nb symbols 13.0)
+257460.129679 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257460.755801 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257460.872958 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 0.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 27.3 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12387/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.1, nb symbols 12.0)
+    UL harq: 8941/27 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 8.3, nb symbols 13.0)
+257461.382540 [NR_RRC] I MeasurementReport Encoded 157 bits (20 bytes)
+257461.625100 [NR_MAC] I UE 0 RNTI ae6f stats sfn: 128.0, cumulated bad DCI 0
+    DL Chan: SSB 0 SINR 28.7 dB RSRP -16 dBm, RI 1 CQI: N/A
+    DL harq: 12416/0 avg code rate 0.9, avg bit/symbol 5.8, avg per TB: (nb RBs 10.1, nb symbols 12.0)
+    UL harq: 9154/27 avg code rate 0.9, avg bit/symbol 5.9, avg per TB: (nb RBs 8.4, nb symbols 13.0)
