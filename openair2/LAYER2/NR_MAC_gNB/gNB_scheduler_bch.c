@@ -448,6 +448,13 @@ void schedule_nr_sib1(nr_cell_sched_t *cell,
                                            &sched_pdcch,
                                            &cell->sched_ctrlSIB1->coreset,
                                            0);
+      // e.g. a CORESET#0 of 3 symbols in the slot of the SSB (searchSpaceZero with O = 0) overlaps the SSB in its third
+      // symbol, and PDCCH candidates overlapping the SSB are not monitored (38.213 10.1)
+      AssertFatal(cce_index >= 0,
+                  "Could not find CCE for SIB1 DCI: CORESET#0 (%d RBs, %d symbols) overlaps the SSB or is too small. Check "
+                  "controlResourceSetZero and searchSpaceZero\n",
+                  type0_PDCCH_CSS_config->num_rbs,
+                  type0_PDCCH_CSS_config->num_symbols);
 
       bool res = false;
       if (cell->sib1_pdsch[i].time_domain_allocation < 0) {

@@ -556,11 +556,17 @@ void nr_pdcch_dci_indication(const UE_nr_rxtx_proc_t *proc,
 
   fapi_nr_dci_indication_t dci_ind = {.SFN = proc->frame_rx, .slot = proc->nr_slot_rx};
 
+  // the LLRs of each search space are stored per symbol with a stride of llr_size divided by the largest CORESET
+  // duration of all the search spaces (see pdcch_processing()), not by the duration of the CORESET of the search space
+  int max_duration = 0;
+  for (int ss_idx = 0; ss_idx < phy_pdcch_config->nb_search_space; ss_idx++)
+    max_duration = max(max_duration, phy_pdcch_config->pdcch_config[ss_idx].coreset.duration);
+  const int llr_stride = llr_size / max_duration;
+
   for (int ss_idx = 0; ss_idx < phy_pdcch_config->nb_search_space; ss_idx++) {
     fapi_nr_dl_config_dci_dl_pdu_rel15_t *rel15 = &phy_pdcch_config->pdcch_config[ss_idx];
     uint8_t unused_start_symb[NR_SYMBOLS_PER_SLOT] = {0};
     const int num_monitoring_occ = get_pdcch_mon_occasions_slot(rel15, ue->frame_parms.symbols_per_slot, unused_start_symb);
-    const int llr_stride = llr_size / rel15->coreset.duration;
     int n_rb, cset_start;
     get_coreset_rballoc(rel15->coreset.frequency_domain_resource, &n_rb, &cset_start);
 

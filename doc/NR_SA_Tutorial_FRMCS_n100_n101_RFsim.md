@@ -342,11 +342,9 @@ Results of the reference run (AWGN channel model):
     has to start at the first RB of the carrier: offset 0 if the SSB after
     puncturing starts in the first RB (e.g. PointA 184030, SSB 184270, UE
     `-C 921500000 --ssb 8`), offset 2 with the configuration of this tutorial.
-    Tested end to end: index 0, 2, 3, 6 and 7 (2 symbols). With 3 symbols
-    (index 1, 4, 5, 8 and 9, which need `dmrs_TypeA_Position = 1`), the UE
-    attaches but loses most of the PDCCH: 3-symbol CORESET#0 does not work in
-    OAI either with 5 MHz and Table 13-1 (also with the upstream `develop`
-    images), independently of the 3 MHz support.
+    Tested end to end: index 0 to 9. The configurations with 3 symbols (index
+    1, 4, 5, 8 and 9) need `dmrs_TypeA_Position = 1` (pos3), since SIB1 starts
+    at symbol 3.
   - The additional n100 GSCNs 41637 (12 PRB) and 41638 (5 MHz, 20 PRB, Table
     13-0 index 10 and 11) are not supported.
   - The RRC ASN.1 is Rel-17: the Rel-18 UE capabilities for 3 MHz
@@ -356,6 +354,10 @@ Results of the reference run (AWGN channel model):
     same BLER in `nr_pbchsim` (half of the PBCH REs are punctured).
   - The UE-specific CORESET of BWPs below 24 PRBs has 2 symbols, with 3
     symbols the OAI UE did not decode the PDCCH after RRCSetup.
+- A CORESET#0 of 3 symbols must not be in the slot of the SSB: with
+  `searchSpaceZero` 0 (O = 0), its third symbol overlaps the SSB (case A,
+  symbols 2 to 5) and no PDCCH candidate of SIB1 is available, the gNB stops
+  with `Could not find CCE for SIB1 DCI`. Use e.g. `searchSpaceZero` 2 (O = 2).
 - The gNB logs `nrarfcn ... is not on the channel raster` for PointA and the
   SSB NR-ARFCN. Only the carrier center has to be on the channel raster, and it
   is in all scenarios, so these messages can be ignored.

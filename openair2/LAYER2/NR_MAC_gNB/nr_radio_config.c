@@ -308,6 +308,8 @@ static NR_ControlResourceSet_t *get_coreset_config(int bwp_id,
   }
   coreset->frequencyDomainResources.size = 6;
   coreset->frequencyDomainResources.bits_unused = 3;
+  // 2 symbols also for BWPs below 24 PRBs: with 3 symbols, the PDSCH would have to start at symbol 3 (dmrs-TypeA-Position
+  // pos3) to not overlap the PDCCH
   coreset->duration = (eff_bwp_size < 48) ? 2 : 1;
   coreset->cce_REG_MappingType.present = NR_ControlResourceSet__cce_REG_MappingType_PR_nonInterleaved;
   coreset->precoderGranularity = NR_ControlResourceSet__precoderGranularity_sameAsREG_bundle;
