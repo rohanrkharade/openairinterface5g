@@ -86,8 +86,7 @@ static int get_stats(char *buf, int debug, telnet_printfunc_t prnt)
   int nrb = frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth;
   AssertFatal(nrb == frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth, "different BW for UL/DL not supported!\n");
   frequency_range_t fr = band > 256 ? FR2 : FR1;
-  int bw_index = get_supported_band_index(scs, fr, nrb);
-  int bw_mhz = get_supported_bw_mhz(fr, bw_index);
+  int bw_mhz = get_nr_channel_bw_mhz(scs, fr, nrb);
 
   const dlul_mac_stats_t *stat = &mac->mac_stats;
   static dlul_mac_stats_t last = {0};

@@ -3523,7 +3523,11 @@ void nr_csirs_scheduling(gNB_MAC_INST *gNB_mac, nr_cell_sched_t *cell, frame_t f
           } else {
             csirs_pdu_rel15->nr_of_rbs = resourceMapping.freqBand.nrofRBs;
           }
-          AssertFatal(csirs_pdu_rel15->nr_of_rbs >= 24, "CSI-RS has %d RBs, but the minimum is 24\n", csirs_pdu_rel15->nr_of_rbs);
+          // the minimum is 24 RBs, or the whole BWP if it is smaller (38.331 CSI-FrequencyOccupation)
+          AssertFatal(csirs_pdu_rel15->nr_of_rbs >= min(24, dl_bwp->BWPSize),
+                      "CSI-RS has %d RBs, but the minimum is 24 or the BWP size %d\n",
+                      csirs_pdu_rel15->nr_of_rbs,
+                      dl_bwp->BWPSize);
 
           csirs_pdu_rel15->csi_type = 1; // NZP-CSI-RS
           csirs_pdu_rel15->symb_l0 = resourceMapping.firstOFDMSymbolInTimeDomain;

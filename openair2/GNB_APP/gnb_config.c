@@ -439,6 +439,12 @@ static void check_carrier_within_band(int band, NR_ARFCN_ValueNR_t point_a, cons
   const uint64_t point_a_hz = from_nrarfcn(band, scs, point_a);
   const long offset = carrier->offsetToCarrier;
   const long n_rb = carrier->carrierBandwidth;
+  if (nr_is_3mhz_carrier(scs, get_freq_range_from_band(band), n_rb))
+    AssertFatal(nr_band_supports_3mhz(band),
+                "%s carrier of %ld PRBs (3 MHz channel bandwidth) is not supported in band n%d (38.101-1 Table 5.3.5-1)\n",
+                uplink ? "UL" : "DL",
+                n_rb,
+                band);
   if (!nr_carrier_within_band(band, scs, point_a_hz, offset, n_rb, uplink, false))
     LOG_E(GNB_APP,
           "%s carrier (pointA %ld, offsetToCarrier %ld, %ld PRBs, SCS %d kHz) exceeds the edges of band n%d\n",
@@ -953,8 +959,12 @@ static NR_ServingCellConfigCommon_t *get_scc_config(int minRXTXTIME, int do_SRS)
                                      *scc->ssbSubcarrierSpacing,
                                      *frequencyInfoDL->absoluteFrequencySSB);
     LOG_I(RRC, "absoluteFrequencySSB %ld corresponds to %lu Hz\n", *frequencyInfoDL->absoluteFrequencySSB, ssb_freq);
+    const NR_SCS_SpecificCarrier_t *dl_carrier = frequencyInfoDL->scs_SpecificCarrierList.list.array[0];
+    const int dl_band = *frequencyInfoDL->frequencyBandList.list.array[0];
+    const bool is_3mhz =
+        nr_is_3mhz_carrier(dl_carrier->subcarrierSpacing, get_freq_range_from_band(dl_band), dl_carrier->carrierBandwidth);
     if (IS_SA_MODE(get_softmodem_params()))
-      check_ssb_raster(ssb_freq, *frequencyInfoDL->frequencyBandList.list.array[0], *scc->ssbSubcarrierSpacing);
+      check_ssb_raster(ssb_freq, dl_band, *scc->ssbSubcarrierSpacing, is_3mhz);
     fix_scc(scc, ssb_bitmap);
     check_carriers_within_band(scc);
   }

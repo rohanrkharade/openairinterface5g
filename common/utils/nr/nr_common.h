@@ -68,6 +68,7 @@ static inline const char *rnti_types(nr_rnti_type_t rr)
 #undef R
 
 #define MU_SCS(m) (15 << m)
+#define NR_3MHZ_NRB 15 // 38.101-1 Table 5.3.2-1 (Rel.18), 15 kHz SCS only
 #define MAX_GSCN_BAND 620 // n78 has the highest GSCN range of 619
 #define NR_SYMBOLS_PER_SLOT 14
 #define NR_SYMBOLS_PER_SLOT_EXTENDED_CP 12
@@ -330,7 +331,10 @@ int get_scan_ssb_first_sc(const double fc,
                           const int mu,
                           nr_gscn_info_t ssbStartSC[MAX_GSCN_BAND]);
 
-void check_ssb_raster(uint64_t freq, int band, int scs);
+void check_ssb_raster(uint64_t freq, int band, int scs, bool is_3mhz);
+bool nr_band_supports_3mhz(int band);
+bool nr_is_3mhz_carrier(int scs, frequency_range_t frequency_range, int n_rb);
+int get_nr_channel_bw_mhz(int scs, frequency_range_t frequency_range, int n_rb);
 bool nr_carrier_within_band(int band,
                             int scs,
                             uint64_t point_a_hz,

@@ -451,10 +451,9 @@ static void config_common(nr_cell_sched_t *cell, const nr_mac_config_t *config, 
   NR_FrequencyInfoDL_t *frequencyInfoDL = scc->downlinkConfigCommon->frequencyInfoDL;
   NR_FreqBandIndicatorNR_t nr_band = *frequencyInfoDL->frequencyBandList.list.array[0];
   frequency_range_t frequency_range = get_freq_range_from_band(nr_band);
-  int bw_index = get_supported_band_index(frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
-                                          frequency_range,
-                                          frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
-  cfg->carrier_config.dl_bandwidth.value = get_supported_bw_mhz(frequency_range, bw_index);
+  cfg->carrier_config.dl_bandwidth.value = get_nr_channel_bw_mhz(frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
+                                                                 frequency_range,
+                                                                 frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
   cfg->carrier_config.dl_bandwidth.tl.tag = NFAPI_NR_CONFIG_DL_BANDWIDTH_TAG; // temporary
   cfg->num_tlv++;
 
@@ -481,9 +480,8 @@ static void config_common(nr_cell_sched_t *cell, const nr_mac_config_t *config, 
   struct NR_FrequencyInfoUL *frequencyInfoUL = scc->uplinkConfigCommon->frequencyInfoUL;
   int scs = frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing;
   frequency_range = get_freq_range_from_band(*frequencyInfoUL->frequencyBandList->list.array[0]);
-  bw_index =
-      get_supported_band_index(scs, frequency_range, frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
-  cfg->carrier_config.uplink_bandwidth.value = get_supported_bw_mhz(frequency_range, bw_index);
+  cfg->carrier_config.uplink_bandwidth.value =
+      get_nr_channel_bw_mhz(scs, frequency_range, frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
   cfg->carrier_config.uplink_bandwidth.tl.tag = NFAPI_NR_CONFIG_UPLINK_BANDWIDTH_TAG; // temporary
   cfg->num_tlv++;
 

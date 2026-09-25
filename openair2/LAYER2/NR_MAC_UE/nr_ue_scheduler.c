@@ -2802,7 +2802,11 @@ void configure_csi_resource_mapping(fapi_nr_dl_config_csirs_pdu_rel15_t *csirs_c
     csirs_config_pdu->nr_of_rbs = bwp_start + bwp_size - csirs_config_pdu->start_rb;
   else
     csirs_config_pdu->nr_of_rbs = resourceMapping->freqBand.nrofRBs;
-  AssertFatal(csirs_config_pdu->nr_of_rbs >= 24, "CSI-RS has %d RBs, but the minimum is 24\n", csirs_config_pdu->nr_of_rbs);
+  // the minimum is 24 RBs, or the whole BWP if it is smaller (38.331 CSI-FrequencyOccupation)
+  AssertFatal(csirs_config_pdu->nr_of_rbs >= min(24, bwp_size),
+              "CSI-RS has %d RBs, but the minimum is 24 or the BWP size %d\n",
+              csirs_config_pdu->nr_of_rbs,
+              bwp_size);
 
   csirs_config_pdu->symb_l0 = resourceMapping->firstOFDMSymbolInTimeDomain;
   if (resourceMapping->firstOFDMSymbolInTimeDomain2)

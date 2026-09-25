@@ -116,10 +116,9 @@ static void config_common_ue_sa(NR_UE_MAC_INST_t *mac, NR_ServingCellConfigCommo
   mac->nr_band = *frequencyInfoDL->frequencyBandList.list.array[0]->freqBandIndicatorNR;
 
   AssertFatal(mac->numerology == frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing, "DL and SSB subcarrierSpacing must be the same!\n");
-  int bw_index = get_supported_band_index(frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
-                                          mac->frequency_range,
-                                          frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
-  cfg->carrier_config.dl_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
+  cfg->carrier_config.dl_bandwidth = get_nr_channel_bw_mhz(frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
+                                                           mac->frequency_range,
+                                                           frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
 
   /** Only set frequency if not already initialized (e.g., from handover reconfigurationWithSync)
   * MAC maintains its own frequency state, don't overwrite it with command-line parameter which
@@ -152,10 +151,9 @@ static void config_common_ue_sa(NR_UE_MAC_INST_t *mac, NR_ServingCellConfigCommo
   mac->p_Max = frequencyInfoUL->p_Max ? *frequencyInfoUL->p_Max : INT_MIN;
 
   AssertFatal(mac->numerology == frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing, "UL and SSB subcarrierSpacing must be the same!\n");
-  bw_index = get_supported_band_index(frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
-                                      mac->frequency_range,
-                                      frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
-  cfg->carrier_config.uplink_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
+  cfg->carrier_config.uplink_bandwidth = get_nr_channel_bw_mhz(frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
+                                                               mac->frequency_range,
+                                                               frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
 
   /** Only set UL frequency if not already initialized (e.g., from handover reconfigurationWithSync)
    * MAC maintains its own frequency state, don't overwrite it with command-line parameter which
@@ -443,10 +441,9 @@ static void config_common_ue(NR_UE_MAC_INST_t *mac, NR_ServingCellConfigCommon_t
     mac->frequency_range = get_freq_range_from_band(mac->nr_band);
 
     AssertFatal(mac->numerology == frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing, "DL and SSB subcarrierSpacing must be the same!\n");
-    int bw_index = get_supported_band_index(frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
-                                            mac->frequency_range,
-                                            frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
-    cfg->carrier_config.dl_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
+    cfg->carrier_config.dl_bandwidth = get_nr_channel_bw_mhz(frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
+                                                             mac->frequency_range,
+                                                             frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
 
     cfg->carrier_config.dl_frequency = from_nrarfcn(mac->nr_band,
                                                     *scc->ssbSubcarrierSpacing,
@@ -476,10 +473,9 @@ static void config_common_ue(NR_UE_MAC_INST_t *mac, NR_ServingCellConfigCommon_t
     mac->p_Max = frequencyInfoUL->p_Max ? *frequencyInfoUL->p_Max : INT_MIN;
 
     AssertFatal(mac->numerology == frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing, "UL and SSB subcarrierSpacing must be the same!\n");
-    int bw_index = get_supported_band_index(frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
-                                            mac->frequency_range,
-                                            frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
-    cfg->carrier_config.uplink_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
+    cfg->carrier_config.uplink_bandwidth = get_nr_channel_bw_mhz(frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
+                                                                 mac->frequency_range,
+                                                                 frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
 
     long *UL_pointA = NULL;
     if (frequencyInfoUL->absoluteFrequencyPointA)
@@ -1773,7 +1769,11 @@ static void configure_common_BWP_ul(NR_UE_MAC_INST_t *mac, int bwp_id, NR_BWP_Up
     // For power calculations assume the UE channel is the smallest channel that can support the BWP
     int bw_index = get_smallest_supported_bandwidth_index(bwp->scs, mac->frequency_range, bwp->BWPSize);
     bwp->channel_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
+    if (bwp->BWPSize <= NR_3MHZ_NRB && nr_is_3mhz_carrier(bwp->scs, mac->frequency_range, NR_3MHZ_NRB)
+        && nr_band_supports_3mhz(mac->nr_band))
+      bwp->channel_bandwidth = 3;
     // Minumum transmission power depends on bandwidth, precalculate it here
+    // (index 0 is 5 MHz, the minimum output power for 3 MHz is the same, 38.101-1 Table 6.3.1-1)
     bwp->P_CMIN = nr_get_Pcmin(bw_index);
     bwp->srs_power_control_initialized = false;
     if (bwp_id == 0) {

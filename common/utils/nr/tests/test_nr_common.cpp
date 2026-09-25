@@ -81,28 +81,28 @@ TEST(nr_band_n100, ssb_raster)
 {
   // 38.101-1 Table 5.4.3.3-1: n100, 15 kHz, GSCN 2303 - <1> - 2307
   for (int gscn = 2303; gscn <= 2307; gscn++)
-    check_ssb_raster(ssref_from_gscn(gscn), 100, 0);
-  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(2302), 100, 0), "does not belong to GSCN range");
-  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(2308), 100, 0), "does not belong to GSCN range");
-  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(2305), 100, 1), "Couldn't find band");
+    check_ssb_raster(ssref_from_gscn(gscn), 100, 0, false);
+  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(2302), 100, 0, false), "does not belong to GSCN range");
+  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(2308), 100, 0, false), "does not belong to GSCN range");
+  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(2305), 100, 1, false), "Couldn't find band");
   // absoluteFrequencySSB of gnb.sa.band100.25prb.usrpb205mini.conf
-  check_ssb_raster(from_nrarfcn(100, 0, 184370), 100, 0);
+  check_ssb_raster(from_nrarfcn(100, 0, 184370), 100, 0, false);
 }
 
 TEST(nr_band_n101, ssb_raster)
 {
   // 38.101-1 Table 5.4.3.3-1: n101, 15 kHz 4754 - <1> - 4768, 30 kHz 4760 - <1> - 4764
   for (int gscn = 4754; gscn <= 4768; gscn++)
-    check_ssb_raster(ssref_from_gscn(gscn), 101, 0);
+    check_ssb_raster(ssref_from_gscn(gscn), 101, 0, false);
   for (int gscn = 4760; gscn <= 4764; gscn++)
-    check_ssb_raster(ssref_from_gscn(gscn), 101, 1);
-  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(4753), 101, 0), "does not belong to GSCN range");
-  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(4769), 101, 0), "does not belong to GSCN range");
-  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(4759), 101, 1), "does not belong to GSCN range");
-  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(4765), 101, 1), "does not belong to GSCN range");
+    check_ssb_raster(ssref_from_gscn(gscn), 101, 1, false);
+  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(4753), 101, 0, false), "does not belong to GSCN range");
+  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(4769), 101, 0, false), "does not belong to GSCN range");
+  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(4759), 101, 1, false), "does not belong to GSCN range");
+  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(4765), 101, 1, false), "does not belong to GSCN range");
   // absoluteFrequencySSB of the band101 usrpb205mini configs
-  check_ssb_raster(from_nrarfcn(101, 0, 380450), 101, 0);
-  check_ssb_raster(from_nrarfcn(101, 1, 380910), 101, 1);
+  check_ssb_raster(from_nrarfcn(101, 0, 380450), 101, 0, false);
+  check_ssb_raster(from_nrarfcn(101, 1, 380910), 101, 1, false);
 }
 
 TEST(nr_band_n100, ssb_case)
@@ -156,6 +156,88 @@ TEST(nr_band_n101, gscn_scan)
     EXPECT_LE(info[i].gscn, 4764);
     EXPECT_EQ(info[i].ssRef, ssref_from_gscn(info[i].gscn));
   }
+}
+
+// SSB reference frequency (Hz) of a GSCN of the 3 MHz raster, 38.101-1 Table 5.4.3.1-2
+static uint64_t ssref_3mhz_from_gscn(int gscn)
+{
+  const int n = gscn - 26638; // 3N + (M - 3) / 2
+  const int M = 3 + 2 * (((n % 3) + 1) % 3 - 1);
+  const int N = (n - (M - 3) / 2) / 3;
+  return (uint64_t)N * 600000 + M * 50000 + 300000;
+}
+
+TEST(nr_3mhz, bands)
+{
+  // 38.101-1 Table 5.3.5-1 (Rel.18)
+  for (int band : {26, 28, 31, 72, 85, 100, 106})
+    EXPECT_TRUE(nr_band_supports_3mhz(band)) << "band " << band;
+  for (int band : {1, 8, 78, 101})
+    EXPECT_FALSE(nr_band_supports_3mhz(band)) << "band " << band;
+}
+
+TEST(nr_3mhz, channel_bandwidth)
+{
+  // 38.101-1 Table 5.3.2-1 (Rel.18): 3 MHz is 15 PRB, 15 kHz only
+  EXPECT_TRUE(nr_is_3mhz_carrier(0, FR1, 15));
+  EXPECT_FALSE(nr_is_3mhz_carrier(1, FR1, 15));
+  EXPECT_FALSE(nr_is_3mhz_carrier(0, FR1, 25));
+  EXPECT_FALSE(nr_is_3mhz_carrier(2, FR2, 15));
+  EXPECT_EQ(get_nr_channel_bw_mhz(0, FR1, 15), 3);
+  EXPECT_EQ(get_nr_channel_bw_mhz(0, FR1, 25), 5);
+  EXPECT_EQ(get_nr_channel_bw_mhz(1, FR1, 24), 10);
+  EXPECT_EQ(get_nr_channel_bw_mhz(1, FR1, 273), 100);
+  // the bandwidth index used for the UE capability and power tables is unchanged
+  EXPECT_EQ(get_supported_band_index(0, FR1, 15), -1);
+  EXPECT_EQ(get_supported_band_index(0, FR1, 25), 0);
+  EXPECT_DEATH(get_nr_channel_bw_mhz(1, FR1, 15), "not a supported channel bandwidth");
+}
+
+TEST(nr_3mhz, sample_rate)
+{
+  double sample_rate, tx_bw, rx_bw;
+  get_samplerate_and_bw(0, 15, 0, &sample_rate, &tx_bw, &rx_bw);
+  EXPECT_EQ(sample_rate, 7.68e6);
+  EXPECT_EQ(tx_bw, 3e6);
+  EXPECT_EQ(rx_bw, 3e6);
+  get_samplerate_and_bw(0, 15, 1, &sample_rate, &tx_bw, &rx_bw);
+  EXPECT_EQ(sample_rate, 5.76e6);
+}
+
+TEST(nr_3mhz, ssb_raster)
+{
+  // 38.101-1 Table 5.4.3.1-2 examples: GSCN 31240 = 920.85 MHz, 31253 = 923.35 MHz
+  EXPECT_EQ(ssref_3mhz_from_gscn(31240), 920850000);
+  EXPECT_EQ(ssref_3mhz_from_gscn(31253), 923350000);
+  // 38.101-1 Table 5.4.3.3-2: n100 31240 - <1> - 31242, 31244 - <1> - 31253
+  for (int gscn = 31240; gscn <= 31253; gscn++) {
+    if (gscn == 31243)
+      EXPECT_DEATH(check_ssb_raster(ssref_3mhz_from_gscn(gscn), 100, 0, true), "does not belong to GSCN range");
+    else
+      check_ssb_raster(ssref_3mhz_from_gscn(gscn), 100, 0, true);
+  }
+  EXPECT_DEATH(check_ssb_raster(ssref_3mhz_from_gscn(31239), 100, 0, true), "does not belong to GSCN range");
+  EXPECT_DEATH(check_ssb_raster(ssref_3mhz_from_gscn(31254), 100, 0, true), "does not belong to GSCN range");
+  // n28 30432 - <1> - 30644
+  check_ssb_raster(ssref_3mhz_from_gscn(30432), 28, 0, true);
+  check_ssb_raster(ssref_3mhz_from_gscn(30644), 28, 0, true);
+  // the two rasters do not overlap
+  EXPECT_DEATH(check_ssb_raster(ssref_from_gscn(2305), 100, 0, true), "not on the 3 MHz synchronization raster");
+  EXPECT_DEATH(check_ssb_raster(ssref_3mhz_from_gscn(31245), 100, 0, false), "not on the synchronization raster");
+  // no 3 MHz in n101 or n8
+  EXPECT_DEATH(check_ssb_raster(ssref_3mhz_from_gscn(31245), 101, 0, true), "Couldn't find band");
+  EXPECT_DEATH(check_ssb_raster(ssref_3mhz_from_gscn(31245), 8, 0, true), "Couldn't find band");
+}
+
+TEST(nr_3mhz, carrier_within_band)
+{
+  // 3 MHz channel (15 PRB) in n100: pointA 920 MHz, carrier center 921.35 MHz, channel 919.85 - 922.85 MHz
+  EXPECT_TRUE(nr_carrier_within_band(100, 0, from_nrarfcn(100, 0, 184000), 0, 15, false, true));
+  // pointA at the lower band edge: the RBs fit, the 3 MHz channel does not
+  EXPECT_TRUE(nr_carrier_within_band(100, 0, from_nrarfcn(100, 0, 183880), 0, 15, false, false));
+  EXPECT_FALSE(nr_carrier_within_band(100, 0, from_nrarfcn(100, 0, 183880), 0, 15, false, true));
+  // UL: pointA 875 MHz, center 876.35 MHz
+  EXPECT_TRUE(nr_carrier_within_band(100, 0, from_nrarfcn(100, 0, 175000), 0, 15, true, true));
 }
 
 int main(int argc, char **argv)

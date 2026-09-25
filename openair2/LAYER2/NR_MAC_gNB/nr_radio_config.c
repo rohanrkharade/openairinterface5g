@@ -284,10 +284,13 @@ static NR_ControlResourceSet_t *get_coreset_config(int bwp_id,
   int eff_bwp_size = bwp_size - additional_offset;
   if (cset_limit && eff_bwp_size > cset_limit)
     eff_bwp_size = cset_limit;
-  AssertFatal(eff_bwp_size >= 24, "CORESET effective BWP size %d is less than 24 PRB, can't allocate\n", eff_bwp_size);
+  // BWPs below 24 PRB (e.g. 15 PRB of 3 MHz channel bandwidth) get a 12 PRB CORESET
+  AssertFatal(eff_bwp_size >= 12, "CORESET effective BWP size %d is less than 12 PRB, can't allocate\n", eff_bwp_size);
   coreset->frequencyDomainResources.buf = calloc(1,6);
   uint64_t buf = 0;
-  if (eff_bwp_size < 48)
+  if (eff_bwp_size < 24)
+    buf = 0x3;
+  else if (eff_bwp_size < 48)
     buf = 0xf;
   else {
     for (int i = 0; i < eff_bwp_size / 48; i++) {
@@ -302,7 +305,7 @@ static NR_ControlResourceSet_t *get_coreset_config(int bwp_id,
   }
   coreset->frequencyDomainResources.size = 6;
   coreset->frequencyDomainResources.bits_unused = 3;
-  coreset->duration = (eff_bwp_size < 48) ? 2 : 1;
+  coreset->duration = (eff_bwp_size < 24) ? 3 : (eff_bwp_size < 48) ? 2 : 1;
   coreset->cce_REG_MappingType.present = NR_ControlResourceSet__cce_REG_MappingType_PR_nonInterleaved;
   coreset->precoderGranularity = NR_ControlResourceSet__precoderGranularity_sameAsREG_bundle;
 
@@ -481,7 +484,8 @@ static NR_NZP_CSI_RS_Resource_t *get_nzp_csi_rs_resource(int id,
   resourceMapping.density.present = NR_CSI_RS_ResourceMapping__density_PR_one;
   resourceMapping.density.choice.one = (NULL_t)0;
   resourceMapping.freqBand.startingRB = 0;
-  resourceMapping.freqBand.nrofRBs = ((curr_bwp >> 2) + (curr_bwp % 4 > 0)) << 2;
+  // multiple of 4, at least 24 (the CSI-RS covers the whole BWP if the BWP is smaller, 38.331 CSI-FrequencyOccupation)
+  resourceMapping.freqBand.nrofRBs = max(24, ((curr_bwp >> 2) + (curr_bwp % 4 > 0)) << 2);
 
   nzpcsi->resourceMapping = resourceMapping;
   nzpcsi->powerControlOffset = 0;
@@ -615,7 +619,7 @@ static void config_csiim(int do_csirs,
    imres->csi_IM_ResourceElementPattern->choice.pattern1->symbolLocation_p1 = nzpcsi->resourceMapping.firstOFDMSymbolInTimeDomain; // same symbol as CSI-RS
    imres->freqBand = calloc(1,sizeof(*imres->freqBand));
    imres->freqBand->startingRB = 0;
-   imres->freqBand->nrofRBs = ((curr_bwp>>2)+(curr_bwp%4>0))<<2;
+   imres->freqBand->nrofRBs = max(24, ((curr_bwp >> 2) + (curr_bwp % 4 > 0)) << 2);
    imres->periodicityAndOffset = calloc(1,sizeof(*imres->periodicityAndOffset));
    // same period and offset of the associated CSI-RS
    imres->periodicityAndOffset->present = nzpcsi->periodicityAndOffset->present;
@@ -649,7 +653,7 @@ long ue_supported_dl_layers(const NR_ServingCellConfigCommon_t *scc, const NR_UE
   const int bw_size = scs_carrier->carrierBandwidth;
   NR_FeatureSets_t *fs = uecap ? uecap->featureSets : NULL;
   if (fs) {
-    const int bw_mhz = get_supported_bw_mhz(freq_range, get_supported_band_index(scs, freq_range, bw_size));
+    const int bw_mhz = get_nr_channel_bw_mhz(scs, freq_range, bw_size);
     // go through UL feature sets and look for one with current SCS
     for (int i = 0; i < fs->featureSetsDownlinkPerCC->list.count; i++) {
       NR_FeatureSetDownlinkPerCC_t *dl_fs = fs->featureSetsDownlinkPerCC->list.array[i];
@@ -992,6 +996,9 @@ void prepare_sim_uecap(NR_UE_NR_Capability_t *cap,
     NR_FeatureSetDownlinkPerCC_t *fs_cc = calloc(1, sizeof(*fs_cc));
     fs_cc->supportedSubcarrierSpacingDL = numerology;
     int bw_index = get_supported_band_index(numerology, freq_range, rbsize);
+    // 3 MHz (mhz3) is only in SupportedBandwidth-v1840 (Rel-18 RRC), use the smallest Rel-17 value (5 MHz)
+    if (nr_is_3mhz_carrier(numerology, freq_range, rbsize))
+      bw_index = 0;
     int bw = get_supported_bw_mhz(freq_range, bw_index);
     if (bw == 90) // 90MHz
       fs_cc->channelBW_90mhz = calloc(1, sizeof(*fs_cc->channelBW_90mhz));

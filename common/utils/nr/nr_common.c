@@ -332,21 +332,73 @@ const sync_raster_t sync_raster[] = {
 };
 // clang-format on
 
-// Section 5.4.3 of 38.101-1 and -2
-void check_ssb_raster(uint64_t freq, int band, int scs)
+// synchronization raster per band for 3 MHz channel bandwidth (Rel.18)
+// (38.101-1 Table 5.4.3.3-2), 15 PRB with punctured PBCH
+// the additional n100 GSCN 41637 (12 PRB) of Table 5.4.3.1-3 is not supported
+// clang-format off
+static const sync_raster_t sync_raster_3mhz[] = {
+  {26, 0, 30937, 1, 31100},
+  {28, 0, 30432, 1, 30644},
+  {31, 0, 28955, 1, 28967},
+  {72, 0, 28947, 1, 28959},
+  {85, 0, 30282, 1, 30359},
+  {100, 0, 31240, 1, 31242},
+  {100, 0, 31244, 1, 31253},
+  {106, 0, 31317, 1, 31329},
+};
+// clang-format on
+
+// 38.101-1 Table 5.3.5-1 (Rel.18): bands with 3 MHz channel bandwidth
+bool nr_band_supports_3mhz(int band)
 {
-  int start_gscn = 0, step_gscn = 0, end_gscn = 0;
-  for (int i = 0; i < sizeof(sync_raster) / sizeof(sync_raster_t); i++) {
-    if (sync_raster[i].band == band && sync_raster[i].scs_index == scs) {
-      start_gscn = sync_raster[i].first_gscn;
-      step_gscn = sync_raster[i].step_gscn;
-      end_gscn = sync_raster[i].last_gscn;
-      break;
-    }
-  }
-  AssertFatal(start_gscn != 0, "Couldn't find band %d with SCS %d\n", band, scs);
+  for (int i = 0; i < sizeofArray(sync_raster_3mhz); i++)
+    if (sync_raster_3mhz[i].band == band)
+      return true;
+  return false;
+}
+
+// 38.101-1 Table 5.3.2-1 (Rel.18): 3 MHz is 15 PRB, only with 15 kHz SCS
+bool nr_is_3mhz_carrier(int scs, frequency_range_t frequency_range, int n_rb)
+{
+  return frequency_range == FR1 && scs == 0 && n_rb == NR_3MHZ_NRB;
+}
+
+// channel bandwidth in MHz of a carrier of n_rb PRBs, including 3 MHz
+int get_nr_channel_bw_mhz(int scs, frequency_range_t frequency_range, int n_rb)
+{
+  if (nr_is_3mhz_carrier(scs, frequency_range, n_rb))
+    return 3;
+  const int bw_index = get_supported_band_index(scs, frequency_range, n_rb);
+  AssertFatal(bw_index >= 0, "%d PRBs with SCS index %d is not a supported channel bandwidth\n", n_rb, scs);
+  return get_supported_bw_mhz(frequency_range, bw_index);
+}
+
+// Section 5.4.3 of 38.101-1 and -2
+void check_ssb_raster(uint64_t freq, int band, int scs, bool is_3mhz)
+{
+  const sync_raster_t *raster = is_3mhz ? sync_raster_3mhz : sync_raster;
+  const int raster_size = is_3mhz ? sizeofArray(sync_raster_3mhz) : sizeofArray(sync_raster);
+  bool band_found = false;
+  for (int i = 0; i < raster_size; i++)
+    band_found |= raster[i].band == band && raster[i].scs_index == scs;
+  AssertFatal(band_found, "Couldn't find band %d with SCS %d%s\n", band, scs, is_3mhz ? " for 3 MHz channel bandwidth" : "");
   int gscn;
-  if (freq < 3000000000) {
+  if (is_3mhz) {
+    // 38.101-1 Table 5.4.3.1-2: SSREF = N * 600 kHz + M * 50 kHz + 300 kHz, GSCN = 26638 + 3N + (M - 3) / 2
+    int N = 0;
+    int M = 0;
+    for (int k = 0; k < 3; k++) {
+      M = (k << 1) + 1;
+      if (freq > M * 50000 + 300000 && (freq - M * 50000 - 300000) % 600000 == 0) {
+        N = (freq - M * 50000 - 300000) / 600000;
+        break;
+      }
+    }
+    AssertFatal(N != 0,
+                "SSB frequency %lu Hz not on the 3 MHz synchronization raster (N * 600kHz + M * 50 kHz + 300 kHz)\n",
+                freq);
+    gscn = 26638 + (3 * N) + (M - 3) / 2;
+  } else if (freq < 3000000000) {
     int N = 0;
     int M = 0;
     for (int k = 0; k < 3; k++) {
@@ -369,17 +421,17 @@ void check_ssb_raster(uint64_t freq, int band, int scs)
                 freq);
     gscn = ((freq - 24250080000) / 17280000) + 22256;
   }
-  AssertFatal(gscn >= start_gscn && gscn <= end_gscn,
-              "GSCN %d corresponding to SSB frequency %lu does not belong to GSCN range for band %d\n",
-              gscn,
-              freq,
-              band);
-  int rel_gscn = gscn - start_gscn;
-  AssertFatal(rel_gscn % step_gscn == 0,
-              "GSCN %d corresponding to SSB frequency %lu not in accordance with GSCN step for band %d\n",
-              gscn,
-              freq,
-              band);
+  bool in_range = false;
+  bool on_step = false;
+  for (int i = 0; i < raster_size; i++) {
+    const sync_raster_t *r = &raster[i];
+    if (r->band != band || r->scs_index != scs || gscn < r->first_gscn || gscn > r->last_gscn)
+      continue;
+    in_range = true;
+    on_step |= (gscn - r->first_gscn) % r->step_gscn == 0;
+  }
+  AssertFatal(in_range, "GSCN %d corresponding to SSB frequency %lu does not belong to GSCN range for band %d\n", gscn, freq, band);
+  AssertFatal(on_step, "GSCN %d corresponding to SSB frequency %lu not in accordance with GSCN step for band %d\n", gscn, freq, band);
 }
 
 // Section 5.3 and 5.4.2 of 38.101-1 and -2: the carrier has to lie inside the operating band
@@ -403,7 +455,9 @@ bool nr_carrier_within_band(int band,
   if (include_guard_bands) {
     const frequency_range_t fr = get_freq_range_from_band(band);
     const int bw_index = get_supported_band_index(scs, fr, n_rb);
-    if (bw_index >= 0)
+    if (nr_is_3mhz_carrier(scs, fr, n_rb))
+      bw_hz = 3000000;
+    else if (bw_index >= 0)
       bw_hz = get_supported_bw_mhz(fr, bw_index) * 1000000ULL;
   }
   return center_hz >= band_min_hz + bw_hz / 2 && center_hz + bw_hz / 2 <= band_max_hz;
@@ -829,6 +883,11 @@ void get_samplerate_and_bw(int mu,
         *tx_bw = 5e6;
         *rx_bw = 5e6;
       }
+      break;
+    case NR_3MHZ_NRB: // 3 MHz, same sampling as 5 MHz (smallest FFT size is 512)
+      *sample_rate = threequarter_fs ? 5.76e6 : 7.68e6;
+      *tx_bw = 3e6;
+      *rx_bw = 3e6;
       break;
     default:
       AssertFatal(0==1,"N_RB %d not yet supported for numerology %d\n",n_rb,mu);
