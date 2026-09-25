@@ -432,6 +432,45 @@ static int get_ulsyncvalidityduration_enum_value(int val)
   return retval;
 }
 
+// not fatal: several existing configurations have carriers slightly outside their band
+static void check_carrier_within_band(int band, NR_ARFCN_ValueNR_t point_a, const NR_SCS_SpecificCarrier_t *carrier, bool uplink)
+{
+  const int scs = carrier->subcarrierSpacing;
+  const uint64_t point_a_hz = from_nrarfcn(band, scs, point_a);
+  const long offset = carrier->offsetToCarrier;
+  const long n_rb = carrier->carrierBandwidth;
+  if (!nr_carrier_within_band(band, scs, point_a_hz, offset, n_rb, uplink, false))
+    LOG_E(GNB_APP,
+          "%s carrier (pointA %ld, offsetToCarrier %ld, %ld PRBs, SCS %d kHz) exceeds the edges of band n%d\n",
+          uplink ? "UL" : "DL",
+          point_a,
+          offset,
+          n_rb,
+          15 << scs,
+          band);
+  else if (!nr_carrier_within_band(band, scs, point_a_hz, offset, n_rb, uplink, true))
+    LOG_W(GNB_APP,
+          "%s carrier (pointA %ld, %ld PRBs, SCS %d kHz): the channel guard bands exceed the edges of band n%d\n",
+          uplink ? "UL" : "DL",
+          point_a,
+          n_rb,
+          15 << scs,
+          band);
+}
+
+static void check_carriers_within_band(const NR_ServingCellConfigCommon_t *scc)
+{
+  const NR_FrequencyInfoDL_t *dl = scc->downlinkConfigCommon->frequencyInfoDL;
+  const int dl_band = *dl->frequencyBandList.list.array[0];
+  check_carrier_within_band(dl_band, dl->absoluteFrequencyPointA, dl->scs_SpecificCarrierList.list.array[0], false);
+
+  const NR_FrequencyInfoUL_t *ul = scc->uplinkConfigCommon->frequencyInfoUL;
+  if (!ul->absoluteFrequencyPointA) // TDD: same carrier as DL
+    return;
+  const int ul_band = ul->frequencyBandList ? *ul->frequencyBandList->list.array[0] : dl_band;
+  check_carrier_within_band(ul_band, *ul->absoluteFrequencyPointA, ul->scs_SpecificCarrierList.list.array[0], true);
+}
+
 void fix_scc(NR_ServingCellConfigCommon_t *scc, uint64_t ssbmap)
 {
   scc->ssb_PositionsInBurst->present = get_ssb_len(scc);
@@ -917,6 +956,7 @@ static NR_ServingCellConfigCommon_t *get_scc_config(int minRXTXTIME, int do_SRS)
     if (IS_SA_MODE(get_softmodem_params()))
       check_ssb_raster(ssb_freq, *frequencyInfoDL->frequencyBandList.list.array[0], *scc->ssbSubcarrierSpacing);
     fix_scc(scc, ssb_bitmap);
+    check_carriers_within_band(scc);
   }
 
   // the gNB uses the servingCellConfigCommon everywhere, even when it should use the servingCellConfigCommonSIB.

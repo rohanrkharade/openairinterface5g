@@ -331,6 +331,13 @@ int get_scan_ssb_first_sc(const double fc,
                           nr_gscn_info_t ssbStartSC[MAX_GSCN_BAND]);
 
 void check_ssb_raster(uint64_t freq, int band, int scs);
+bool nr_carrier_within_band(int band,
+                            int scs,
+                            uint64_t point_a_hz,
+                            int offset_to_carrier,
+                            int n_rb,
+                            bool uplink,
+                            bool include_guard_bands);
 int get_smallest_supported_bandwidth_index(int scs, frequency_range_t frequency_range, int n_rbs);
 unsigned short get_m_srs(int c_srs, int b_srs);
 unsigned short get_N_b_srs(int c_srs, int b_srs);

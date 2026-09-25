@@ -220,7 +220,7 @@ const nr_bandentry_t nr_bandtable[] = {{1,    1920000,  1980000,  2110000,  2170
                                        {94,    880000,   915000,  1432000,  1517000, 20, 20,  176000,  286400, 100},
                                        {95,   2010000,  2025000,      000,      000, 20, 20,  402000,  402000, 100},
                                        {96,   5925000,  7125000,  5925000,  7125000,  1,  1,  795000,  795000,  15},
-                                       {100,   874400,   880000,   919400,   925000, 20, 20,  174880,  174880, 100},
+                                       {100,   874400,   880000,   919400,   925000, 20, 20,  174880,  183880, 100},
                                        {101,  1900000,  1910000,  1900000,  1910000, 20, 20,  380000,  380000, 100},
                                        {102,  5925000,  6425000,  5925000,  6425000,  1,  1,  795000,  795000,  15},
                                        {104,  6425000,  7125000,  6425000,  7125000,  1,  1,  828334,  828334,  15},
@@ -380,6 +380,33 @@ void check_ssb_raster(uint64_t freq, int band, int scs)
               gscn,
               freq,
               band);
+}
+
+// Section 5.3 and 5.4.2 of 38.101-1 and -2: the carrier has to lie inside the operating band
+// with include_guard_bands, the whole channel bandwidth is checked (if n_rb is a standard size)
+// otherwise only the transmission bandwidth (the RBs themselves)
+bool nr_carrier_within_band(int band,
+                            int scs,
+                            uint64_t point_a_hz,
+                            int offset_to_carrier,
+                            int n_rb,
+                            bool uplink,
+                            bool include_guard_bands)
+{
+  const int idx = get_nr_table_idx(band, scs);
+  const uint64_t band_min_hz = 1000 * (uplink ? nr_bandtable[idx].ul_min : nr_bandtable[idx].dl_min);
+  const uint64_t band_max_hz = 1000 * (uplink ? nr_bandtable[idx].ul_max : nr_bandtable[idx].dl_max);
+  const uint64_t rb_hz = (uint64_t)NR_NB_SC_PER_RB * (15000 << scs);
+  const uint64_t carrier_start_hz = point_a_hz + offset_to_carrier * rb_hz;
+  const uint64_t center_hz = carrier_start_hz + (n_rb * rb_hz) / 2;
+  uint64_t bw_hz = n_rb * rb_hz;
+  if (include_guard_bands) {
+    const frequency_range_t fr = get_freq_range_from_band(band);
+    const int bw_index = get_supported_band_index(scs, fr, n_rb);
+    if (bw_index >= 0)
+      bw_hz = get_supported_bw_mhz(fr, bw_index) * 1000000ULL;
+  }
+  return center_hz >= band_min_hz + bw_hz / 2 && center_hz + bw_hz / 2 <= band_max_hz;
 }
 
 int get_supported_bw_mhz(frequency_range_t frequency_range, int bw_index)
