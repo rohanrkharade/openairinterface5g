@@ -205,7 +205,9 @@ float nr_get_Pcmax(int p_Max,
                    int N_RB_UL,
                    bool is_transform_precoding,
                    int n_prbs,
-                   int start_prb);
+                   int start_prb,
+                   int power_class,
+                   const frame_structure_t *fs);
 
 float nr_get_Pcmin(int bandwidth_index);
 void set_antenna_port_parameters(fapi_nr_dl_config_dlsch_pdu_rel15_t *dlsch_pdu, int n_cw, long *max_length, long *dmrs, int ant);

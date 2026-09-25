@@ -15,6 +15,8 @@ softmodem_params_t* get_softmodem_params(void)
 #include <cstdio>
 #include "common/utils/LOG/log.h"
 
+static const frame_structure_t no_fs = {};
+
 TEST(test_pcmax, test_mpr)
 {
   // Inner PRB, MPR = 1.5, no delta MPR
@@ -25,25 +27,26 @@ TEST(test_pcmax, test_mpr)
   frame_type_t frame_type = TDD;
   int channel_bandwidth = 20;
   EXPECT_EQ(expected_power,
-            nr_get_Pcmax(23, nr_band, frame_type, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, false, 6, prb_start));
+            nr_get_Pcmax(23, nr_band, frame_type, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, false, 6, prb_start, 3, &no_fs));
 
   // Outer PRB, MPR = 3, no delta MPR
   prb_start = 0;
   expected_power = 23 - (3.0 / 2);
   EXPECT_EQ(expected_power,
-            nr_get_Pcmax(23, nr_band, frame_type, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, false, 6, prb_start));
+            nr_get_Pcmax(23, nr_band, frame_type, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, false, 6, prb_start, 3, &no_fs));
 
   // Outer PRB on band 28, MPR = 3, delta MPR = 0.5 dB
   N_RB_UL = 78;
   nr_band = 28;
   expected_power = 23 - ((3.0 + 0.5) / 2);
-  EXPECT_EQ(expected_power, nr_get_Pcmax(23, nr_band, frame_type, FR1, 30, 2, false, 1, N_RB_UL, false, 100, prb_start));
+  EXPECT_EQ(expected_power, nr_get_Pcmax(23, nr_band, frame_type, FR1, 30, 2, false, 1, N_RB_UL, false, 100, prb_start, 3, &no_fs));
 }
 
 TEST(test_pcmax, test_not_implemented)
 {
   int N_RB_UL = 51;
-  EXPECT_DEATH(nr_get_Pcmax(23, 20, TDD, FR1, 20, 1, false, 1, N_RB_UL, false, 6, 0), "MPR for Pi/2 BPSK not implemented yet");
+  EXPECT_DEATH(nr_get_Pcmax(23, 20, TDD, FR1, 20, 1, false, 1, N_RB_UL, false, 6, 0, 3, &no_fs),
+               "MPR for Pi/2 BPSK not implemented yet");
 }
 
 TEST(test_pcmax, test_pucch_max_power)
@@ -53,16 +56,18 @@ TEST(test_pcmax, test_pucch_max_power)
   int N_RB_UL = 51; // 10Mhz
   float expected_power = 23 - (1.0 / 2);
   int channel_bandwidth = 20;
-  EXPECT_EQ(expected_power, nr_get_Pcmax(23, 20, TDD, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, true, 1, prb_start));
+  EXPECT_EQ(expected_power, nr_get_Pcmax(23, 20, TDD, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, true, 1, prb_start, 3, &no_fs));
 
   // Other fromats, no transform precoding, MPR = 3
   expected_power = 23 - (3.0 / 2);
-  EXPECT_EQ(expected_power, nr_get_Pcmax(23, 20, TDD, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, false, 1, prb_start));
+  EXPECT_EQ(expected_power,
+            nr_get_Pcmax(23, 20, TDD, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, false, 1, prb_start, 3, &no_fs));
 }
 
 TEST(test_pucch_power_state, test_accumulated_delta_pucch)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -98,7 +103,9 @@ TEST(test_pucch_power_state, test_accumulated_delta_pucch)
                             current_UL_BWP.BWPSize,
                             false,
                             nb_of_prbs,
-                            start_prb);
+                            start_prb,
+                            3,
+                            &mac.frame_structure);
   int pucch_power_prev = get_pucch_tx_power_ue(&mac,
                                                scs,
                                                &pucch_Config,
@@ -170,6 +177,7 @@ TEST(pc_min, check_all_bw_indexes)
 TEST(pusch_power_control, pusch_power_control_msg3)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -208,7 +216,9 @@ TEST(pusch_power_control, pusch_power_control_msg3)
                             current_UL_BWP.BWPSize,
                             false,
                             num_rb,
-                            start_prb);
+                            start_prb,
+                            3,
+                            &mac.frame_structure);
 
   int preambleReceivedTargetPower = -96;
   mac.ra.prach_resources.ra_preamble_rx_target_power = preambleReceivedTargetPower;
@@ -267,6 +277,7 @@ TEST(pusch_power_control, pusch_power_control_msg3)
 TEST(pusch_power_control, pusch_power_data)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -309,7 +320,9 @@ TEST(pusch_power_control, pusch_power_data)
                             current_UL_BWP.BWPSize,
                             transform_precoding,
                             num_rb,
-                            start_prb);
+                            start_prb,
+                            3,
+                            &mac.frame_structure);
 
   int power = get_pusch_tx_power_ue(&mac,
                                     num_rb,
@@ -348,6 +361,7 @@ TEST(pusch_power_control, pusch_power_data)
 TEST(pusch_power_control, pusch_power_control_state_initialization)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -394,6 +408,7 @@ TEST(pusch_power_control, pusch_power_control_state_initialization)
 TEST(pusch_power_control, pusch_power_control_state)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -436,7 +451,9 @@ TEST(pusch_power_control, pusch_power_control_state)
                             current_UL_BWP.BWPSize,
                             transform_precoding,
                             num_rb,
-                            start_prb);
+                            start_prb,
+                            3,
+                            &mac.frame_structure);
 
   int power = get_pusch_tx_power_ue(&mac,
                                     num_rb,
@@ -496,6 +513,7 @@ TEST(pusch_power_control, pusch_power_control_state)
 TEST(pusch_power_control, pusch_power_100_rb)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -566,12 +584,13 @@ TEST(test_pcmax, test_non_obvious_bwp_size)
   int channel_bandwidth = 10;
   float expected_power = 23 - 1.5 / 2;
   EXPECT_EQ(expected_power,
-            nr_get_Pcmax(23, nr_band, frame_type, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, false, 6, prb_start));
+            nr_get_Pcmax(23, nr_band, frame_type, FR1, channel_bandwidth, 2, false, 1, N_RB_UL, false, 6, prb_start, 3, &no_fs));
 }
 
 TEST(test_srs_power, use_pusch_power_adjustment_state)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -599,6 +618,7 @@ TEST(test_srs_power, use_pusch_power_adjustment_state)
 TEST(test_srs_power, no_support_for_two_pusch_power_adjustment_states)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -622,6 +642,7 @@ TEST(test_srs_power, no_support_for_two_pusch_power_adjustment_states)
 TEST(test_srs_power, no_tpc_accumulation)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -655,6 +676,7 @@ TEST(test_srs_power, no_tpc_accumulation)
 TEST(test_srs_power, tpc_accumulation)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   NR_UE_UL_BWP_t current_UL_BWP = {0};
   current_UL_BWP.scs = 1;
   current_UL_BWP.BWPSize = 106;
@@ -686,6 +708,75 @@ TEST(test_srs_power, tpc_accumulation)
   int more_tx_power =
       get_srs_tx_power_ue(&mac, &srs_resource, &srs_resource_set, delta_srs, is_configured_for_pusch_on_current_bwp);
   EXPECT_EQ(tx_power + delta_srs * 2, more_tx_power);
+}
+
+// 38.101-1 Table 6.2.1-1 and 6.2.2 (Table 6.2.2-4b): power class 1, 31 dBm
+TEST(test_pcmax, power_class_1_outer_inner)
+{
+  // n100 FDD 5 MHz, 25 PRB, CP-OFDM QPSK: inner MPR 1.5 dB, outer 3 dB (as for power class 3)
+  EXPECT_EQ(31 - 1.5 / 2, nr_get_Pcmax(31, 100, FDD, FR1, 5, 2, false, 0, 25, false, 8, 4, 1, &no_fs));
+  EXPECT_EQ(31 - 3.0 / 2, nr_get_Pcmax(31, 100, FDD, FR1, 5, 2, false, 0, 25, false, 16, 1, 1, &no_fs));
+  // DFT-s-OFDM 16QAM: inner 1 dB
+  EXPECT_EQ(31 - 1.0 / 2, nr_get_Pcmax(31, 100, FDD, FR1, 5, 4, false, 0, 25, true, 8, 4, 1, &no_fs));
+}
+
+TEST(test_pcmax, power_class_1_edge)
+{
+  // edge RB allocation (L_CRB <= 6 at a channel edge), CBW < 50 MHz: MPR = CEIL(7.2 - 6 * CBW / 100, 0.5)
+  // 5 MHz: CEIL(6.9) = 7 dB
+  EXPECT_EQ(31 - 7.0 / 2, nr_get_Pcmax(31, 100, FDD, FR1, 5, 2, false, 0, 25, false, 6, 0, 1, &no_fs));
+  EXPECT_EQ(31 - 7.0 / 2, nr_get_Pcmax(31, 100, FDD, FR1, 5, 2, false, 0, 25, false, 3, 22, 1, &no_fs));
+  // 3 MHz: CEIL(7.02) = 7.5 dB
+  EXPECT_EQ(31 - 7.5 / 2, nr_get_Pcmax(31, 100, FDD, FR1, 3, 2, false, 0, 15, false, 1, 0, 1, &no_fs));
+  // 7 RBs at the edge is not an edge allocation: outer, 3 dB
+  EXPECT_EQ(31 - 3.0 / 2, nr_get_Pcmax(31, 100, FDD, FR1, 5, 2, false, 0, 25, false, 7, 0, 1, &no_fs));
+}
+
+static frame_structure_t tdd_period(int n_ul_slots)
+{
+  // 5 slots of 15 kHz, D...D S U...U, S with 4 UL symbols
+  frame_structure_t fs = {};
+  fs.frame_type = TDD;
+  fs.numb_slots_period = 5;
+  const int n_dl_slots = 5 - 1 - n_ul_slots;
+  for (int i = 0; i < 5; i++) {
+    tdd_bitmap_t *slot = &fs.period_cfg.tdd_slot_bitmap[i];
+    if (i < n_dl_slots) {
+      slot->slot_type = TDD_NR_DOWNLINK_SLOT;
+    } else if (i == n_dl_slots) {
+      slot->slot_type = TDD_NR_MIXED_SLOT;
+      slot->num_ul_symbols = 4;
+    } else {
+      slot->slot_type = TDD_NR_UPLINK_SLOT;
+    }
+  }
+  return fs;
+}
+
+TEST(test_pcmax, power_class_1_n101_ul_duty)
+{
+  // NOTE 2 of Table 6.2.2-4b: in n101, MPR + 3 dB above 50%, + 6 dB above 75% of UL symbols
+  const frame_structure_t fs_1ul = tdd_period(1); // 18 / 70 UL symbols
+  const frame_structure_t fs_3ul = tdd_period(3); // 46 / 70
+  const frame_structure_t fs_4ul = tdd_period(4); // 60 / 70
+  EXPECT_EQ(31 - 1.5 / 2, nr_get_Pcmax(31, 101, TDD, FR1, 5, 2, false, 0, 25, false, 8, 4, 1, &fs_1ul));
+  EXPECT_EQ(31 - 4.5 / 2, nr_get_Pcmax(31, 101, TDD, FR1, 5, 2, false, 0, 25, false, 8, 4, 1, &fs_3ul));
+  EXPECT_EQ(31 - 7.5 / 2, nr_get_Pcmax(31, 101, TDD, FR1, 5, 2, false, 0, 25, false, 8, 4, 1, &fs_4ul));
+  // not for power class 3
+  EXPECT_EQ(23 - 1.5 / 2, nr_get_Pcmax(23, 101, TDD, FR1, 5, 2, false, 0, 25, false, 8, 4, 3, &fs_4ul));
+}
+
+TEST(test_pcmax, power_class_1_p_max)
+{
+  // P-Max of the cell (20 dBm) limits the power of a power class 1 UE
+  // P_CMAX_H = min(P-Max, 31) = 20, P_CMAX_L = min(P-Max, 31 - MPR) = 20
+  EXPECT_EQ(20, nr_get_Pcmax(20, 100, FDD, FR1, 5, 2, false, 0, 25, false, 8, 4, 1, &no_fs));
+}
+
+TEST(test_pcmax, power_class_not_supported)
+{
+  EXPECT_DEATH(nr_get_Pcmax(23, 78, TDD, FR1, 40, 2, false, 1, 106, false, 6, 4, 2, &no_fs), "Power class 2 not supported");
+  EXPECT_DEATH(nr_get_Pcmax(31, 14, FDD, FR1, 10, 2, false, 0, 52, false, 6, 4, 1, &no_fs), "band n14");
 }
 
 int main(int argc, char** argv)

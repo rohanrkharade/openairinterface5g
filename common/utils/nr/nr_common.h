@@ -336,6 +336,7 @@ int get_scan_ssb_first_sc(const double fc,
 
 void check_ssb_raster(uint64_t freq, int band, int scs, bool is_3mhz);
 bool nr_band_supports_3mhz(int band);
+bool nr_band_supports_power_class_1(int band);
 bool nr_is_3mhz_carrier(int scs, frequency_range_t frequency_range, int n_rb);
 int get_nr_channel_bw_mhz(int scs, frequency_range_t frequency_range, int n_rb);
 bool nr_carrier_within_band(int band,

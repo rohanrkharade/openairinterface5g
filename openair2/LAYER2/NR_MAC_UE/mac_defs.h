@@ -606,6 +606,8 @@ typedef struct NR_UE_MAC_INST_s {
 
   int dmrs_TypeA_Position;
   int p_Max;
+  /// UE power class (38.101-1 Table 6.2.1-1), 1 or 3
+  int power_class;
   int p_Max_alt;
 
   long pdsch_HARQ_ACK_Codebook;

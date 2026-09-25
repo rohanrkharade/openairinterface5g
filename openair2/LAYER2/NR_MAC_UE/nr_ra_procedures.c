@@ -834,8 +834,9 @@ bool init_RA(NR_UE_MAC_INST_t *mac)
                                          cfg->carrier_config.dl_grid_size[scs_for_pcmax],
                                          true,
                                          n_prbs,
-                                         start_prb);
-
+                                         start_prb,
+                                         mac->power_class,
+                                         &mac->frame_structure);
 
   // TODO if the Random Access procedure was initiated for SI request
   // and the Random Access Resources for SI request have been explicitly provided by RRC

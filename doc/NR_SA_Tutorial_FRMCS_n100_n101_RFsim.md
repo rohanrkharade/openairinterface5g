@@ -188,6 +188,12 @@ The UE options are set in `USE_ADDITIONAL_OPTIONS` of the docker-compose file:
   (after puncturing for 3 MHz).
 - `--ue-scan-carrier` makes the UE search all GSCNs of the band that fit in the
   carrier instead of using `--ssb`.
+- `--ue-power-class 1` sets the UE power class to 1 (31 dBm) instead of 3 (23
+  dBm, default). In n100 and n101, power class 1 is only allowed for FRMCS cab
+  radios with the antenna on the train roof (TS 38.101-1 Table 6.2.1-1, NOTE 8).
+  The UE reports it in its capability (`ue-PowerClass` `pc1`). The cell P-Max
+  (`pMax` in the gNB configuration, 20 dBm in these scenarios) still limits the
+  UE power: set `pMax = 31` to allow 31 dBm.
 
 ## 5. Check the end-to-end connection
 
@@ -322,6 +328,15 @@ SNR:
 docker logs rfsim5g-oai-gnb 2>&1 | grep -E "dlsch_rounds|ulsch_rounds" | tail -2
 ```
 
+The power headroom reports of the UE show its configured maximum output power
+(PCMAX). With n100, 5 MHz and `pMax = 31`, a UE of power class 3 reports about
+21 dBm (23 dBm minus half of the MPR), a UE started with `--ue-power-class 1`
+about 29 dBm (27 dBm for allocations at the edge of the channel):
+
+```bash
+docker logs rfsim5g-oai-gnb 2>&1 | grep -oE "PH -?[0-9]+ dB PCMAX -?[0-9]+ dBm" | sort | uniq -c
+```
+
 ## 6. Collect the logs and stop
 
 ```bash
@@ -374,8 +389,11 @@ Results of the reference run (AWGN channel model), see the outputs in
   PRACH, TDD pattern) and the whole protocol stack, but not emissions at the
   band edges or the RF setup. The B205mini configurations still need to be
   tested over the air.
-- The OAI nrUE assumes power class 3 (23 dBm). A-MPR and network signalling
-  (NS) values of n100 are not implemented.
+- The OAI nrUE supports power class 3 (23 dBm, default) and 1 (31 dBm,
+  `--ue-power-class 1`). A-MPR and network signalling (NS) values of n100 are
+  not implemented. For n101 with power class 1, the MPR increase of more than
+  50% or 75% of uplink symbols (TS 38.101-1 Table 6.2.2-4b, NOTE 2) is based on
+  the uplink symbols of the TDD pattern.
 - 3 MHz channel bandwidth (Rel-18) limitations:
   - CORESET#0 (TS 38.213 Table 13-0): 12 RBs (index 0 and 1) and 24 RBs
     punctured to 15 RBs (index 2 to 9, interleaved or not). The 24 RB CORESET#0

@@ -357,6 +357,17 @@ bool nr_band_supports_3mhz(int band)
   return false;
 }
 
+// 38.101-1 Table 6.2.1-1 (Rel.18): bands with power class 1 (31 dBm). In n100 and n101 (NOTE 8), only for FRMCS cab
+// radios (train roof antenna). The MPR of power class 1 in n14 (Table 6.2.2-5) is not implemented.
+bool nr_band_supports_power_class_1(int band)
+{
+  const int bands[] = {7, 25, 31, 40, 41, 66, 71, 72, 77, 78, 85, 100, 101};
+  for (int i = 0; i < sizeofArray(bands); i++)
+    if (bands[i] == band)
+      return true;
+  return false;
+}
+
 // 38.101-1 Table 5.3.2-1 (Rel.18): 3 MHz is 15 PRB, only with 15 kHz SCS
 bool nr_is_3mhz_carrier(int scs, frequency_range_t frequency_range, int n_rb)
 {

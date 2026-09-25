@@ -2629,7 +2629,9 @@ void nr_ue_ul_scheduler(NR_UE_MAC_INST_t *mac, nr_uplink_indication_t *ul_info)
                                       mac->current_UL_BWP->BWPSize,
                                       tp_enabled,
                                       pdu->rb_size,
-                                      pdu->rb_start);
+                                      pdu->rb_start,
+                                      mac->power_class,
+                                      &mac->frame_structure);
             if (nr_ue_get_sdu(mac, frame_tx, slot_tx, ulsch_input_buffer, TBS_bytes, tx_power, P_CMAX, &BSRsent)) {
               pdu->tx_request_body.fapiTxPdu = ulsch_input_buffer;
               pdu->tx_request_body.pdu_length = TBS_bytes;

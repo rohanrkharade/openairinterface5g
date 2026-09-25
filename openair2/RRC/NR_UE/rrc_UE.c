@@ -2760,6 +2760,9 @@ static void nr_rrc_ue_process_ueCapabilityEnquiry(NR_UE_RRC_INST_t *rrc, NR_UECa
     asn1cSequenceAdd(rrc->UECap.UE_NR_Capability->rf_Parameters.supportedBandListNR.list, NR_BandNR_t, nr_bandnr);
     // without a UE capability file, report the band of the serving cell
     nr_bandnr->bandNR = rrc->serving_band > 0 ? rrc->serving_band : 1;
+    // absent ue-PowerClass means power class 3 (38.331 BandNR)
+    if (get_nrUE_params()->power_class == 1)
+      asn1cCallocOne(nr_bandnr->ue_PowerClass, NR_BandNR__ue_PowerClass_pc1);
   }
   xer_fprint(stdout, &asn_DEF_NR_UE_NR_Capability, (void *)rrc->UECap.UE_NR_Capability);
 

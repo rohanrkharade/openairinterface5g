@@ -432,6 +432,12 @@ int main(int argc, char **argv)
 
       UE_CC->frame_parms = *fp;
       mac->nr_band = cell.band;
+      const int power_class = get_nrUE_params()->power_class;
+      AssertFatal(power_class == 3 || (power_class == 1 && nr_band_supports_power_class_1(cell.band)),
+                  "UE power class %d not supported in band n%d (38.101-1 Table 6.2.1-1)\n",
+                  power_class,
+                  cell.band);
+      mac->power_class = power_class;
       mac->ssb_start_subcarrier = cell.ssb_start;
       mac->dl_frequency = cell.rf_frequency;
 

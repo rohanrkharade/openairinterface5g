@@ -53,13 +53,58 @@ static float get_delta_mpr(uint16_t nr_band, frame_type_t frame_type, int scs, i
   return 0;
 }
 
+// share of uplink symbols in the TDD pattern, upper bound of the share of uplink symbols transmitted by the UE
+static float get_ul_symbol_ratio(const frame_structure_t *fs)
+{
+  if (fs->frame_type != TDD || fs->numb_slots_period == 0)
+    return 1.0f;
+  int ul_symbols = 0;
+  for (int i = 0; i < fs->numb_slots_period; i++) {
+    const tdd_bitmap_t *slot = &fs->period_cfg.tdd_slot_bitmap[i];
+    if (slot->slot_type == TDD_NR_UPLINK_SLOT)
+      ul_symbols += NR_SYMBOLS_PER_SLOT;
+    else if (slot->slot_type == TDD_NR_MIXED_SLOT)
+      ul_symbols += slot->num_ul_symbols;
+  }
+  return (float)ul_symbols / (fs->numb_slots_period * NR_SYMBOLS_PER_SLOT);
+}
+
 // MPR according to 38-101 6.2.2
-static float get_mpr(int Qm, int N_RB_UL, bool is_transform_precoding, int n_prbs, int start_prb, int power_class)
+static float get_mpr(int Qm,
+                     int N_RB_UL,
+                     bool is_transform_precoding,
+                     int n_prbs,
+                     int start_prb,
+                     int power_class,
+                     int channel_bandwidth,
+                     uint16_t nr_band,
+                     const frame_structure_t *fs)
 {
   float MPR = 0;
   int rb_low = (n_prbs / 2) > 1 ? (n_prbs / 2) : 1;
   int rb_high = N_RB_UL - rb_low - n_prbs;
   bool is_inner_rb = start_prb >= rb_low && start_prb <= rb_high && n_prbs <= ((N_RB_UL / 2) + (N_RB_UL & 1));
+  if (power_class == 1) {
+    // 38.101-1 6.2.2, Table 6.2.2-4b (bands other than n14): the MPR of outer and inner RB allocations is the one of
+    // Table 6.2.2-1, edge RB allocations have their own MPR
+    AssertFatal(nr_band != 14, "Power class 1 MPR of band n14 (Table 6.2.2-5) not implemented\n");
+    const int l_crb_edge = channel_bandwidth < 50 ? 6 : 12;
+    const int rb_start_edge = channel_bandwidth >= 70 && is_transform_precoding && Qm <= 4 ? 1 : 0;
+    const bool is_edge_rb = n_prbs <= l_crb_edge && (start_prb <= rb_start_edge || start_prb >= N_RB_UL - rb_start_edge - n_prbs);
+    if (is_edge_rb) {
+      const float mpr_edge =
+          channel_bandwidth < 50 ? 7.2f - 6.0f * channel_bandwidth / 100 : 5.35f + 3.15f * channel_bandwidth / 100;
+      MPR = ceilf(mpr_edge * 2) / 2; // CEIL(x, 0.5 dB)
+    } else {
+      MPR = get_mpr(Qm, N_RB_UL, is_transform_precoding, n_prbs, start_prb, 3, channel_bandwidth, nr_band, fs);
+    }
+    // NOTE 2 of Table 6.2.2-4b: MPR increased in n101 with more than 50% (75%) of uplink symbols in a radio frame
+    if (nr_band == 101) {
+      const float ul_ratio = get_ul_symbol_ratio(fs);
+      MPR += ul_ratio > 0.75f ? 6 : ul_ratio > 0.5f ? 3 : 0;
+    }
+    return MPR;
+  }
   switch (power_class) {
     case 3:
       // Table 6.2.2-1 in 38.101
@@ -109,7 +154,7 @@ static float get_mpr(int Qm, int N_RB_UL, bool is_transform_precoding, int n_prb
       }
       break;
     default:
-      AssertFatal(false, "PowerClass != 3 not implemented\n");
+      AssertFatal(false, "PowerClass %d not implemented\n", power_class);
   }
   return MPR;
 }
@@ -145,15 +190,17 @@ float nr_get_Pcmax(int p_Max,
                    int N_RB_UL,
                    bool is_transform_precoding,
                    int n_prbs,
-                   int start_prb)
+                   int start_prb,
+                   int power_class,
+                   const frame_structure_t *fs)
 {
-  const int power_class = 3; // Assume power class 3
+  AssertFatal(power_class == 1 || power_class == 3, "Power class %d not supported\n", power_class);
   if (frequency_range == FR1) {
     // TODO configure P-MAX from the upper layers according to 38.331
-    int p_powerclass = 23; // dBm assuming poweclass 3 UE
+    int p_powerclass = power_class == 1 ? 31 : 23; // dBm, 38.101-1 Table 6.2.1-1
     int p_emax = p_Max != INT_MIN ? p_Max : p_powerclass;
     int delta_P_powerclass = 0; // for powerclass 2 needs to be changed
-    if (p_Max && Qm == 1 && powerBoostPi2BPSK
+    if (power_class == 3 && p_Max && Qm == 1 && powerBoostPi2BPSK
         && (nr_band == 40 || nr_band == 41 || nr_band == 77 || nr_band == 78 || nr_band == 79)) {
       p_emax += 3;
       delta_P_powerclass -= 3;
@@ -167,7 +214,7 @@ float nr_get_Pcmax(int p_Max,
       LOG_E(NR_MAC, "Need to implement delta_TC for band 41\n");
     int delta_TC = 0;
 
-    float MPR = get_mpr(Qm, N_RB_UL, is_transform_precoding, n_prbs, start_prb, power_class);
+    float MPR = get_mpr(Qm, N_RB_UL, is_transform_precoding, n_prbs, start_prb, power_class, channel_bandwidth, nr_band, fs);
     float delta_MPR = get_delta_mpr(nr_band, frame_type, scs, channel_bandwidth, power_class);
     int A_MPR = 0; // TODO too complicated to implement for now (see 6.2.3 in 38.101-1)
     int delta_rx_SRS = 0; // TODO for SRS
@@ -350,7 +397,9 @@ int16_t get_pucch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                             mac->current_UL_BWP->BWPSize,
                             format_type == 2,
                             1,
-                            start_prb);
+                            start_prb,
+                            mac->power_class,
+                            &mac->frame_structure);
   float P_CMIN = current_UL_BWP->P_CMIN;
   int16_t pathloss = compute_nr_SSB_PL(mac);
 
@@ -509,7 +558,9 @@ int get_pusch_tx_power_ue(NR_UE_MAC_INST_t *mac,
                             mac->current_UL_BWP->BWPSize,
                             transform_precoding,
                             num_rb,
-                            start_prb);
+                            start_prb,
+                            mac->power_class,
+                            &mac->frame_structure);
 
   int P_O_PUSCH = P_O_NOMINAL_PUSCH + P_O_UE_PUSCH;
 
@@ -599,7 +650,9 @@ int get_srs_tx_power_ue(NR_UE_MAC_INST_t *mac,
                             mac->current_UL_BWP->BWPSize,
                             true,
                             get_m_srs(srs_resource->freqHopping.c_SRS, srs_resource->freqHopping.b_SRS),
-                            0); // TODO: Determine SRS start RB
+                            0,
+                            mac->power_class,
+                            &mac->frame_structure); // TODO: Determine SRS start RB
 
   int16_t pathloss = compute_nr_SSB_PL(mac);
 

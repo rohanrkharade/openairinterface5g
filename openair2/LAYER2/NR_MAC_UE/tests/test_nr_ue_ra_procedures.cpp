@@ -151,6 +151,7 @@ void nr_mac_rrc_meas_ind_ue(module_id_t module_id,
 TEST(test_init_ra, four_step_cbra)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   RA_config_t *ra = &mac.ra;
   NR_RACH_ConfigCommon_t nr_rach_ConfigCommon = {0};
   NR_RACH_ConfigGeneric_t rach_ConfigGeneric = {0};
@@ -186,6 +187,7 @@ TEST(test_init_ra, four_step_cbra)
 TEST(test_init_ra, four_step_cfra)
 {
   NR_UE_MAC_INST_t mac = {0};
+  mac.power_class = 3; // as set by nr_l2_init_ue()
   RA_config_t *ra = &mac.ra;
   NR_RACH_ConfigCommon_t nr_rach_ConfigCommon = {0};
   NR_RACH_ConfigGeneric_t rach_ConfigGeneric = {0};

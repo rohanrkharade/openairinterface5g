@@ -62,6 +62,7 @@ extern uint16_t ue_id_g;
   {"ue-scan-carrier",              CONFIG_HLP_UESCAN,          PARAMFLAG_BOOL,  .iptr=&(nrUE_params.UE_scan_carrier),        .defintval=0,      TYPE_INT,      0}, \
   {"ue-fo-compensation",           CONFIG_HLP_UEFO,            PARAMFLAG_BOOL,  .iptr=&(nrUE_params.UE_fo_compensation),     .defintval=0,      TYPE_INT,      0}, \
   {"ue-max-power",                 NULL,                       0,               .iptr=&(nrUE_params.tx_max_power),            .defintval=90,     TYPE_INT,      0}, \
+  {"ue-power-class",               CONFIG_HLP_UEPOWERCLASS,    0,               .iptr=&(nrUE_params.power_class),             .defintval=3,      TYPE_INT,      0}, \
   {"r"  ,                          CONFIG_HLP_PRB_SA,          0,               .iptr=&(nrUE_params.N_RB_DL),                .defintval=106,    TYPE_UINT,     0}, \
   {"ssb",                          CONFIG_HLP_SSC,             0,               .iptr=&(nrUE_params.ssb_start_subcarrier), .defintval=516,    TYPE_UINT16,   0}, \
   {"if_freq" ,                     CONFIG_HLP_IF_FREQ,         0,               .u64ptr=&(nrUE_params.if_freq),              .defint64val=0,    TYPE_UINT64,   0}, \
@@ -123,6 +124,7 @@ typedef struct {
   double rx_gain;
   int vcdflag;
   int tx_max_power;
+  int power_class;
   int num_ul_actors;
   int num_dl_actors;
   /* Shared core pool for actors (see --actor-affinity). NULL means leave them unpinned. */

@@ -260,6 +260,15 @@ TEST(nr_3mhz, carrier_within_band)
   EXPECT_TRUE(nr_carrier_within_band(100, 0, from_nrarfcn(100, 0, 175000), 0, 15, true, true));
 }
 
+TEST(nr_power_class, power_class_1_bands)
+{
+  // 38.101-1 Table 6.2.1-1 (Rel.18), n14 excluded (MPR of Table 6.2.2-5 not implemented)
+  for (int band : {7, 25, 31, 40, 41, 66, 71, 72, 77, 78, 85, 100, 101})
+    EXPECT_TRUE(nr_band_supports_power_class_1(band)) << "band " << band;
+  for (int band : {1, 3, 8, 14, 28, 79, 106})
+    EXPECT_FALSE(nr_band_supports_power_class_1(band)) << "band " << band;
+}
+
 int main(int argc, char **argv)
 {
   logInit();

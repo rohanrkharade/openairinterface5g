@@ -122,6 +122,7 @@ NR_UE_MAC_INST_t *nr_l2_init_ue(int instance_id, int numerology)
   NR_UE_MAC_INST_t *mac = nr_ue_mac_inst[instance_id];
   mac->ue_id = instance_id;
   mac->numerology = numerology;
+  mac->power_class = 3; // default, kept by a MAC reset (nr_ue_init_mac())
   nr_ue_init_mac(mac);
   int ret = pthread_mutex_init(&mac->if_mutex, NULL);
   AssertFatal(ret == 0, "Mutex init failed\n");
