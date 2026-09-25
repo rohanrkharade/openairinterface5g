@@ -264,6 +264,29 @@ docker exec rfsim5g-oai-nr-ue ping -I oaitun_ue1 -c 20 -i 0.5 192.168.72.135
 docker exec rfsim5g-oai-ext-dn ping -c 20 -i 0.2 12.1.1.2
 ```
 
+Output with n100, 5 MHz (UE to DN, then DN to UE):
+
+```
+PING 192.168.72.135 (192.168.72.135) from 12.1.1.2 oaitun_ue1: 56(84) bytes of data.
+64 bytes from 192.168.72.135: icmp_seq=1 ttl=63 time=26.8 ms
+64 bytes from 192.168.72.135: icmp_seq=2 ttl=63 time=17.3 ms
+...
+--- 192.168.72.135 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 9518ms
+rtt min/avg/max/mdev = 16.871/22.760/51.870/7.145 ms
+```
+
+```
+PING 12.1.1.2 (12.1.1.2) 56(84) bytes of data.
+64 bytes from 12.1.1.2: icmp_seq=1 ttl=63 time=24.4 ms
+...
+--- 12.1.1.2 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 3813ms
+rtt min/avg/max/mdev = 11.963/22.442/43.058/6.414 ms
+```
+
+The full outputs of every scenario are in [Reference logs](#7-reference-logs).
+
 ### 5.4 iperf3
 
 DL (3 Mbps UDP, the UE receives) and UL (1 Mbps UDP):
@@ -273,6 +296,21 @@ docker exec -d rfsim5g-oai-ext-dn iperf3 -s -1 -p 5201
 docker exec rfsim5g-oai-nr-ue iperf3 -c 192.168.72.135 -p 5201 -B 12.1.1.2 -u -b 3M -t 20 -R
 docker exec -d rfsim5g-oai-ext-dn iperf3 -s -1 -p 5202
 docker exec rfsim5g-oai-nr-ue iperf3 -c 192.168.72.135 -p 5202 -B 12.1.1.2 -u -b 1M -t 20
+```
+
+Summary at the end of the output with n100, 5 MHz, DL then UL. The `receiver`
+line gives the bitrate and the lost datagrams:
+
+```
+[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams
+[  5]   0.00-20.08  sec  7.18 MBytes  3.00 Mbits/sec  0.000 ms  0/0 (0%)  sender
+[  5]   0.00-20.00  sec  7.18 MBytes  3.01 Mbits/sec  0.471 ms  0/5196 (0%)  receiver
+```
+
+```
+[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams
+[  5]   0.00-20.00  sec  2.38 MBytes  1.00 Mbits/sec  0.000 ms  0/1727 (0%)  sender
+[  5]   0.00-20.05  sec  2.38 MBytes   998 Kbits/sec  9.273 ms  0/1727 (0%)  receiver
 ```
 
 ### 5.5 MAC statistics
@@ -300,16 +338,17 @@ The same scenarios are defined as CI tests in
 
 ## 7. Reference logs
 
-Full gNB and UE logs of a reference run of each scenario, with images built
-from the `feature/n100-n101-support` branch (2026-09-25):
+Full gNB and UE logs, and ping and iperf3 outputs, of a reference run of each
+scenario, with images built from the `develop` branch of this repository
+(commit `ddaacaf2f5`, 2026-09-25):
 
-| Scenario                       | gNB log                                                                       | UE log                                                                           |
-|--------------------------------|-------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| n100, FDD, 5 MHz, 15 kHz       | [gnb-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100/gnb-log.txt)          | [nr-ue-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100/nr-ue-log.txt)          |
-| n101, TDD, 5 MHz, 15 kHz       | [gnb-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/gnb-log.txt) | [nr-ue-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/nr-ue-log.txt) |
-| n101, TDD, 10 MHz, 30 kHz      | [gnb-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/gnb-log.txt) | [nr-ue-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/nr-ue-log.txt) |
-| n100, FDD, 3 MHz, 15 kHz       | [gnb-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/gnb-log.txt)     | [nr-ue-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/nr-ue-log.txt)     |
-| n100, 3 MHz, UE scanning       | [gnb-scan-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/gnb-scan-log.txt) | [nr-ue-scan-log.txt](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/nr-ue-scan-log.txt) |
+| Scenario | gNB log | UE log | Ping | Ping | iperf3 | iperf3 |
+|---|---|---|---|---|---|---|
+| n100, FDD, 5 MHz, 15 kHz | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n100/gnb-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n100/nr-ue-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n100/ping-ue-to-dn.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n100/ping-dn-to-ue.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n100/iperf3-dl.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n100/iperf3-ul.txt) |
+| n101, TDD, 5 MHz, 15 kHz | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/gnb-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/nr-ue-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/ping-ue-to-dn.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/ping-dn-to-ue.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/iperf3-dl.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n101_u0_25prb/iperf3-ul.txt) |
+| n101, TDD, 10 MHz, 30 kHz | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/gnb-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/nr-ue-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/ping-ue-to-dn.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/ping-dn-to-ue.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/iperf3-dl.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/iperf3-ul.txt) |
+| n100, FDD, 3 MHz, 15 kHz | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/gnb-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/nr-ue-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/ping-ue-to-dn.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/ping-dn-to-ue.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/iperf3-dl.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/iperf3-ul.txt) |
+| n100, 3 MHz, UE scanning | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/gnb-scan-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/nr-ue-scan-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/ping-ue-to-dn-scan.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/ping-dn-to-ue-scan.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/iperf3-dl-scan.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/iperf3-ul-scan.txt) |
 
 > **Note:** The UE logs contain the Ki/OPc of the test SIM configured in
 > `ci-scripts/conf_files/nrue.uicc.conf` and keys derived from them. These are
@@ -317,15 +356,16 @@ from the `feature/n100-n101-support` branch (2026-09-25):
 
 ## 8. Reference results
 
-Results of the reference run (AWGN channel model):
+Results of the reference run (AWGN channel model), see the outputs in
+[Reference logs](#7-reference-logs):
 
-| Scenario                  | Attach | Ping UE to DN (avg RTT) | Ping DN to UE (avg RTT) | iperf3 DL 3 Mbps     | iperf3 UL 1 Mbps     |
-|---------------------------|--------|-------------------------|-------------------------|----------------------|----------------------|
-| n100, 5 MHz, 15 kHz       | yes    | 0% loss (21.1 ms)       | 0% loss (20.4 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
-| n101, 5 MHz, 15 kHz       | yes    | 0% loss (19.4 ms)       | 0% loss (16.5 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
-| n101, 10 MHz, 30 kHz      | yes    | 0% loss (26.6 ms)       | 0% loss (18.9 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
-| n100, 3 MHz, 15 kHz       | yes    | 0% loss (23.0 ms)       | 0% loss (24.8 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
-| n100, 3 MHz, UE scanning  | yes    | 0% loss (27.8 ms)       | 0% loss (25.7 ms)       | 3.00 Mbps, 0% loss   | 1.00 Mbps, 0% loss   |
+| Scenario                  | Attach | Ping UE to DN (avg RTT) | Ping DN to UE (avg RTT) | iperf3 DL 3 Mbps          | iperf3 UL 1 Mbps          |
+|---------------------------|--------|-------------------------|-------------------------|---------------------------|---------------------------|
+| n100, 5 MHz, 15 kHz       | yes    | 0% loss (22.8 ms)       | 0% loss (22.4 ms)       | 3.01 Mbps, 0/5196 lost    | 998 kbps, 0/1727 lost     |
+| n101, 5 MHz, 15 kHz       | yes    | 0% loss (18.9 ms)       | 0% loss (19.4 ms)       | 3.02 Mbps, 0/5210 lost    | 997 kbps, 0/1726 lost     |
+| n101, 10 MHz, 30 kHz      | yes    | 0% loss (26.0 ms)       | 0% loss (23.8 ms)       | 3.02 Mbps, 0/5222 lost    | 998 kbps, 0/1727 lost     |
+| n100, 3 MHz, 15 kHz       | yes    | 0% loss (32.1 ms)       | 0% loss (40.0 ms)       | 3.02 Mbps, 0/5209 lost    | 994 kbps, 0/1723 lost     |
+| n100, 3 MHz, UE scanning  | yes    | 0% loss (31.8 ms)       | 0% loss (81.2 ms)       | 3.01 Mbps, 0/5190 lost    | 994 kbps, 0/1727 lost     |
 
 ## 9. Limitations
 

@@ -1,0 +1,25 @@
+PING 12.1.1.2 (12.1.1.2) 56(84) bytes of data.
+64 bytes from 12.1.1.2: icmp_seq=1 ttl=63 time=28.4 ms
+64 bytes from 12.1.1.2: icmp_seq=2 ttl=63 time=41.7 ms
+64 bytes from 12.1.1.2: icmp_seq=3 ttl=63 time=25.5 ms
+64 bytes from 12.1.1.2: icmp_seq=4 ttl=63 time=26.6 ms
+64 bytes from 12.1.1.2: icmp_seq=5 ttl=63 time=23.6 ms
+64 bytes from 12.1.1.2: icmp_seq=6 ttl=63 time=47.4 ms
+64 bytes from 12.1.1.2: icmp_seq=7 ttl=63 time=28.9 ms
+64 bytes from 12.1.1.2: icmp_seq=8 ttl=63 time=49.8 ms
+64 bytes from 12.1.1.2: icmp_seq=9 ttl=63 time=81.0 ms
+64 bytes from 12.1.1.2: icmp_seq=10 ttl=63 time=55.1 ms
+64 bytes from 12.1.1.2: icmp_seq=11 ttl=63 time=60.0 ms
+64 bytes from 12.1.1.2: icmp_seq=12 ttl=63 time=37.2 ms
+64 bytes from 12.1.1.2: icmp_seq=13 ttl=63 time=41.2 ms
+64 bytes from 12.1.1.2: icmp_seq=14 ttl=63 time=31.1 ms
+64 bytes from 12.1.1.2: icmp_seq=15 ttl=63 time=128 ms
+64 bytes from 12.1.1.2: icmp_seq=16 ttl=63 time=24.3 ms
+64 bytes from 12.1.1.2: icmp_seq=17 ttl=63 time=303 ms
+64 bytes from 12.1.1.2: icmp_seq=18 ttl=63 time=133 ms
+64 bytes from 12.1.1.2: icmp_seq=19 ttl=63 time=217 ms
+64 bytes from 12.1.1.2: icmp_seq=20 ttl=63 time=240 ms
+
+--- 12.1.1.2 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 3923ms
+rtt min/avg/max/mdev = 23.598/81.166/302.735/79.594 ms, pipe 2

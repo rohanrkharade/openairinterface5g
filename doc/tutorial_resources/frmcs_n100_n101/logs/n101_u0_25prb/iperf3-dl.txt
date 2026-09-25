@@ -1,0 +1,30 @@
+Connecting to host 192.168.72.135, port 5201
+Reverse mode, remote host 192.168.72.135 is sending
+[  5] local 12.1.1.2 port 39489 connected to 192.168.72.135 port 5201
+[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams
+[  5]   0.00-1.00   sec   409 KBytes  3.35 Mbits/sec  0.952 ms  0/289 (0%)  
+[  5]   1.00-2.00   sec   365 KBytes  2.99 Mbits/sec  0.934 ms  0/258 (0%)  
+[  5]   2.00-3.00   sec   368 KBytes  3.01 Mbits/sec  0.842 ms  0/260 (0%)  
+[  5]   3.00-4.00   sec   365 KBytes  2.99 Mbits/sec  0.912 ms  0/258 (0%)  
+[  5]   4.00-5.00   sec   366 KBytes  3.00 Mbits/sec  0.995 ms  0/259 (0%)  
+[  5]   5.00-6.00   sec   366 KBytes  3.00 Mbits/sec  1.045 ms  0/259 (0%)  
+[  5]   6.00-7.00   sec   366 KBytes  3.00 Mbits/sec  1.336 ms  0/259 (0%)  
+[  5]   7.00-8.00   sec   366 KBytes  3.00 Mbits/sec  2.899 ms  0/259 (0%)  
+[  5]   8.00-9.00   sec   366 KBytes  3.00 Mbits/sec  3.753 ms  0/259 (0%)  
+[  5]   9.00-10.00  sec   356 KBytes  2.92 Mbits/sec  3.755 ms  0/252 (0%)  
+[  5]  10.00-11.00  sec   372 KBytes  3.05 Mbits/sec  2.398 ms  0/263 (0%)  
+[  5]  11.00-12.00  sec   372 KBytes  3.05 Mbits/sec  0.910 ms  0/263 (0%)  
+[  5]  12.00-13.00  sec   365 KBytes  2.99 Mbits/sec  1.834 ms  0/258 (0%)  
+[  5]  13.00-14.00  sec   366 KBytes  3.00 Mbits/sec  0.864 ms  0/259 (0%)  
+[  5]  14.00-15.00  sec   327 KBytes  2.68 Mbits/sec  1.084 ms  0/231 (0%)  
+[  5]  15.00-16.00  sec   406 KBytes  3.32 Mbits/sec  1.084 ms  0/287 (0%)  
+[  5]  16.00-17.00  sec   366 KBytes  3.00 Mbits/sec  1.200 ms  0/259 (0%)  
+[  5]  17.00-18.00  sec   366 KBytes  3.00 Mbits/sec  1.014 ms  0/259 (0%)  
+[  5]  18.00-19.00  sec   366 KBytes  3.00 Mbits/sec  0.825 ms  0/259 (0%)  
+[  5]  19.00-20.00  sec   368 KBytes  3.01 Mbits/sec  0.982 ms  0/260 (0%)  
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams
+[  5]   0.00-20.14  sec  7.20 MBytes  3.00 Mbits/sec  0.000 ms  0/0 (0%)  sender
+[  5]   0.00-20.00  sec  7.19 MBytes  3.02 Mbits/sec  0.982 ms  0/5210 (0%)  receiver
+
+iperf Done.
