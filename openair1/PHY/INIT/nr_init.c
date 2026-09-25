@@ -279,7 +279,9 @@ void nr_phy_config_request_sim(PHY_VARS_gNB *gNB,
   gNB_config->cell_config.phy_cell_id.value             = Nid_cell;
   gNB_config->ssb_config.scs_common.value               = mu;
   gNB_config->ssb_table.ssb_subcarrier_offset.value     = 0;
-  gNB_config->ssb_table.ssb_offset_point_a.value        = (N_RB_DL-20)>>1;
+  // SSB in the middle of the carrier, 12 RBs after puncturing for 3 MHz channel bandwidth
+  const int ssb_nb_rb = nr_is_3mhz_carrier(mu, mu < 2 ? FR1 : FR2, N_RB_DL) ? 20 - 2 * NR_SSB_PUNCTURED_SC / NR_NB_SC_PER_RB : 20;
+  gNB_config->ssb_table.ssb_offset_point_a.value = (N_RB_DL - ssb_nb_rb) >> 1;
   gNB_config->ssb_table.ssb_mask_list[1].ssb_mask.value = (rev_burst)&(0xFFFFFFFF);
   gNB_config->ssb_table.ssb_mask_list[0].ssb_mask.value = (rev_burst>>32)&(0xFFFFFFFF);
   gNB_config->cell_config.frame_duplex_type.value       = TDD;

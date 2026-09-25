@@ -166,10 +166,13 @@ void nr_common_signal_procedures(PHY_VARS_gNB *gNB, int frame, int slot, const n
   fp->ssb_start_subcarrier = nr_get_ssb_start_sc(scs,
                                                  pdu->ssbOffsetPointA,
                                                  pdu->SsbSubcarrierOffset,
-                                                 fp->freq_range);
+                                                 fp->freq_range,
+                                                 fp->ssb_punctured);
 
   if (fp->print_ue_help_cmdline_log && IS_SA_MODE(get_softmodem_params())) {
     fp->print_ue_help_cmdline_log = false;
+    // the UE --ssb option is the first subcarrier of the SSB after puncturing if applicable
+    const int ue_ssb = fp->ssb_start_subcarrier + (fp->ssb_punctured ? NR_SSB_PUNCTURED_SC : 0);
     if (fp->dl_CarrierFreq != fp->ul_CarrierFreq)
       LOG_A(PHY,
             "Command line parameters for OAI UE: -C %lu --CO %ld -r %d --numerology %d --ssb %d %s\n",
@@ -177,7 +180,7 @@ void nr_common_signal_procedures(PHY_VARS_gNB *gNB, int frame, int slot, const n
             fp->ul_CarrierFreq - fp->dl_CarrierFreq,
             fp->N_RB_DL,
             scs,
-            fp->ssb_start_subcarrier,
+            ue_ssb,
             fp->threequarter_fs ? "-E" : "");
     else
       LOG_A(PHY,
@@ -185,7 +188,7 @@ void nr_common_signal_procedures(PHY_VARS_gNB *gNB, int frame, int slot, const n
             fp->dl_CarrierFreq,
             fp->N_RB_DL,
             scs,
-            fp->ssb_start_subcarrier,
+            ue_ssb,
             fp->threequarter_fs ? "-E" : "");
   }
   LOG_D(PHY,"SS TX: frame %d, slot %d, start_symbol %d\n", frame, slot, ssb_start_symbol);
@@ -231,8 +234,10 @@ void nr_common_signal_procedures(PHY_VARS_gNB *gNB, int frame, int slot, const n
 
   uint64_t local_phase_comp_prb_mask[fp->symbols_per_slot][prb_mask_words];
   memset(local_phase_comp_prb_mask, 0, sizeof(local_phase_comp_prb_mask));
-  const int ssb_start_prb = fp->ssb_start_subcarrier / NR_NB_SC_PER_RB;
-  const int ssb_nb_prb = (fp->ssb_start_subcarrier % NR_NB_SC_PER_RB + 240 + NR_NB_SC_PER_RB - 1) / NR_NB_SC_PER_RB;
+  const int punctured_sc = fp->ssb_punctured ? NR_SSB_PUNCTURED_SC : 0;
+  const int ssb_first_sc = fp->ssb_start_subcarrier + punctured_sc;
+  const int ssb_start_prb = ssb_first_sc / NR_NB_SC_PER_RB;
+  const int ssb_nb_prb = (ssb_first_sc % NR_NB_SC_PER_RB + 240 - 2 * punctured_sc + NR_NB_SC_PER_RB - 1) / NR_NB_SC_PER_RB;
   for (int symbol = ssb_start_symbol; symbol < ssb_start_symbol + NR_N_SYMBOLS_SSB; symbol++)
     mark_prb_range(&local_phase_comp_prb_mask[0][0], prb_mask_words, symbol, ssb_start_prb, ssb_nb_prb);
 

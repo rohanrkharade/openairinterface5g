@@ -511,10 +511,13 @@ static void config_common_ue(NR_UE_MAC_INST_t *mac, NR_ServingCellConfigCommon_t
 
   // SSB Table config
   if (frequencyInfoDL && frequencyInfoDL->absoluteFrequencySSB) {
-    cfg->ssb_table.ssb_offset_point_a = get_ssb_offset_to_pointA(*frequencyInfoDL->absoluteFrequencySSB,
-                                                                 frequencyInfoDL->absoluteFrequencyPointA,
-                                                                 cfg->ssb_config.scs_common,
-                                                                 mac->frequency_range);
+    const NR_SCS_SpecificCarrier_t *carrier = frequencyInfoDL->scs_SpecificCarrierList.list.array[0];
+    cfg->ssb_table.ssb_offset_point_a =
+        get_ssb_offset_to_pointA(*frequencyInfoDL->absoluteFrequencySSB,
+                                 frequencyInfoDL->absoluteFrequencyPointA,
+                                 cfg->ssb_config.scs_common,
+                                 mac->frequency_range,
+                                 nr_is_3mhz_carrier(carrier->subcarrierSpacing, mac->frequency_range, carrier->carrierBandwidth));
     cfg->ssb_table.ssb_period = *scc->ssb_periodicityServingCell;
     // NSA -> take ssb offset from SCS
     cfg->ssb_table.ssb_subcarrier_offset = get_ssb_subcarrier_offset(*frequencyInfoDL->absoluteFrequencySSB,

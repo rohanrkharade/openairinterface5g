@@ -2879,7 +2879,8 @@ NR_BCCH_DL_SCH_Message_t *get_SIB1_NR(const NR_ServingCellConfigCommon_t *scc,
   sib1->servingCellConfigCommon->downlinkConfigCommon.frequencyInfoDL.offsetToPointA = get_ssb_offset_to_pointA(*scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencySSB,
                                scc->downlinkConfigCommon->frequencyInfoDL->absoluteFrequencyPointA,
                                scc->downlinkConfigCommon->initialDownlinkBWP->genericParameters.subcarrierSpacing,
-                               frequency_range);
+                               frequency_range,
+                               is_ssb_punctured(scc));
 
   LOG_I(NR_RRC,
 	"SIB1 freq: offsetToPointA %d\n",

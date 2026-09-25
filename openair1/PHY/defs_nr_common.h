@@ -192,8 +192,10 @@ typedef struct NR_DL_FRAME_PARMS_s {
   uint8_t half_frame_bit;
 
   //SSB related params
-  /// Start in Subcarrier index of the SSB block
-  uint16_t ssb_start_subcarrier;
+  /// Start in Subcarrier index of the SSB block (of all 240 subcarriers, negative if the punctured SSB starts at PointA)
+  int ssb_start_subcarrier;
+  /// SSB punctured to its 12 middle RBs (3 MHz channel bandwidth, 38.211 7.4.3.1)
+  bool ssb_punctured;
   /// SSB type
   nr_ssb_type_e ssb_type;
   /// Max number of SSB in frame
@@ -210,6 +212,12 @@ typedef struct NR_DL_FRAME_PARMS_s {
   uint8_t tdd_period;
   bool print_ue_help_cmdline_log;
 } NR_DL_FRAME_PARMS;
+
+/// true if subcarrier ssb_sc (0 to 239) of the SSB is not transmitted
+static inline bool nr_ssb_sc_punctured(const NR_DL_FRAME_PARMS *fp, int ssb_sc)
+{
+  return fp->ssb_punctured && (ssb_sc < NR_SSB_PUNCTURED_SC || ssb_sc >= 240 - NR_SSB_PUNCTURED_SC);
+}
 
 // PRS config structures
 typedef struct {

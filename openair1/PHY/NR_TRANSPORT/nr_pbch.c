@@ -53,7 +53,8 @@ void nr_generate_pbch_dmrs(uint32_t *gold_pbch_dmrs,
 #ifdef DEBUG_PBCH_DMRS
     printf("m %d at k %d of l %d\n", m, k, l);
 #endif
-    txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_dmrs[m], amp, 15);
+    if (!nr_ssb_sc_punctured(frame_parms, nushift + 4 * m))
+      txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_dmrs[m], amp, 15);
     k+=4;
   }
 
@@ -61,7 +62,8 @@ void nr_generate_pbch_dmrs(uint32_t *gold_pbch_dmrs,
   k = frame_parms->ssb_start_subcarrier + nushift;
   l++;
 
-  for (int m = 60; m < 84; m++) {
+  // with a punctured SSB, all the DMRS of symbol 2 are punctured
+  for (int m = 60; m < 84 && !frame_parms->ssb_punctured; m++) {
 #ifdef DEBUG_PBCH_DMRS
     printf("m %d at k %d of l %d\n", m, k, l);
 #endif
@@ -82,7 +84,8 @@ void nr_generate_pbch_dmrs(uint32_t *gold_pbch_dmrs,
 #ifdef DEBUG_PBCH_DMRS
     printf("m %d at k %d of l %d\n", m, k, l);
 #endif
-    txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_dmrs[m], amp, 15);
+    if (!nr_ssb_sc_punctured(frame_parms, nushift + 4 * (m - 84)))
+      txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_dmrs[m], amp, 15);
     k+=4;
   }
 
@@ -313,7 +316,9 @@ void nr_generate_pbch(PHY_VARS_gNB *gNB,
 #ifdef DEBUG_PBCH
       printf("m %d ssb_sc_idx %d at k %d of l %d\n", m, ssb_sc_idx, k, l);
 #endif
-      txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_pbch_e[m], amp, 15);
+      // punctured modulation symbols are not transmitted (38.211 7.4.3.1)
+      if (!nr_ssb_sc_punctured(frame_parms, ssb_sc_idx))
+        txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_pbch_e[m], amp, 15);
       k++;
       m++;
     }
@@ -332,7 +337,9 @@ void nr_generate_pbch(PHY_VARS_gNB *gNB,
 #ifdef DEBUG_PBCH
       printf("m %d ssb_sc_idx %d at k %d of l %d\n", m, ssb_sc_idx, k, l);
 #endif
-      txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_pbch_e[m], amp, 15);
+      // punctured modulation symbols are not transmitted (38.211 7.4.3.1)
+      if (!nr_ssb_sc_punctured(frame_parms, ssb_sc_idx))
+        txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_pbch_e[m], amp, 15);
       k++;
       m++;
     }
@@ -350,7 +357,9 @@ void nr_generate_pbch(PHY_VARS_gNB *gNB,
 #ifdef DEBUG_PBCH
       printf("m %d ssb_sc_idx %d at k %d of l %d\n", m, ssb_sc_idx, k, l);
 #endif
-      txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_pbch_e[m], amp, 15);
+      // punctured modulation symbols are not transmitted (38.211 7.4.3.1)
+      if (!nr_ssb_sc_punctured(frame_parms, ssb_sc_idx))
+        txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_pbch_e[m], amp, 15);
       k++;
       m++;
     }
@@ -369,7 +378,9 @@ void nr_generate_pbch(PHY_VARS_gNB *gNB,
 #ifdef DEBUG_PBCH
       printf("m %d ssb_sc_idx %d at k %d of l %d\n", m, ssb_sc_idx, k, l);
 #endif
-      txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_pbch_e[m], amp, 15);
+      // punctured modulation symbols are not transmitted (38.211 7.4.3.1)
+      if (!nr_ssb_sc_punctured(frame_parms, ssb_sc_idx))
+        txdataF[l * frame_parms->ofdm_symbol_size + k] = c16mulRealShift(mod_pbch_e[m], amp, 15);
       k++;
       m++;
     }

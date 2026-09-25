@@ -20,9 +20,6 @@ void nr_channel_level(const int symbol,
                       int32_t avg[nb_rx],
                       const uint32_t len);
 void nr_scale_channel(int size, int ch_estimates_ext[][size], int symb, uint32_t len, int nrOfLayers, int nb_rx, int shift_ch_ext);
-int nr_get_ssb_start_sc(int scs,
-                        int ssb_offset_point_a,
-                        int ssb_sco,
-                        frequency_range_t freq_range);
+int nr_get_ssb_start_sc(int scs, int ssb_offset_point_a, int ssb_sco, frequency_range_t freq_range, bool punctured);
 
 #endif

@@ -117,7 +117,9 @@ void nr_fill_rx_indication(fapi_nr_rx_indication_t *rx_ind,
         rx->ssb_pdu.ssb_index = (frame_parms->ssb_index) & 0x7;
         rx->ssb_pdu.ssb_length = frame_parms->Lmax;
         rx->ssb_pdu.cell_id = frame_parms->Nid_cell;
-        rx->ssb_pdu.ssb_start_subcarrier = frame_parms->ssb_start_subcarrier;
+        // SSB start as seen by the MAC: after puncturing if applicable (offsetToPointA and k_SSB refer to it)
+        rx->ssb_pdu.ssb_start_subcarrier =
+            frame_parms->ssb_start_subcarrier + (frame_parms->ssb_punctured ? NR_SSB_PUNCTURED_SC : 0);
         rx->ssb_pdu.arfcn = get_ssb_arfcn(frame_parms);
         rx->ssb_pdu.radiolink_monitoring = RLM_in_sync; // TODO to be removed from here
         rx->ssb_pdu.decoded_pdu = true;

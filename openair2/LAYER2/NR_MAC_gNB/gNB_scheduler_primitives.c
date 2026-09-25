@@ -3901,6 +3901,15 @@ int get_beam_from_ssbidx(nr_cell_sched_t *cell, int ssb_idx)
 /** @brief Maximum number of SS/PBCH block positions (L_max)
  * @param scc ServingCellConfigCommon for which to determine L_max from ssb-PositionsInBurst (TS 38.331).
  * @return L_max: shortBitmap: 4; mediumBitmap: 8; longBitmap: 64. */
+/// SSB punctured to its 12 middle RBs with 3 MHz channel bandwidth (38.211 7.4.3.1)
+bool is_ssb_punctured(const NR_ServingCellConfigCommon_t *scc)
+{
+  const NR_FrequencyInfoDL_t *dl = scc->downlinkConfigCommon->frequencyInfoDL;
+  const NR_SCS_SpecificCarrier_t *carrier = dl->scs_SpecificCarrierList.list.array[0];
+  const frequency_range_t fr = get_freq_range_from_band(*dl->frequencyBandList.list.array[0]);
+  return nr_is_3mhz_carrier(carrier->subcarrierSpacing, fr, carrier->carrierBandwidth);
+}
+
 int get_max_ssbs(const NR_ServingCellConfigCommon_t *scc)
 {
   switch (scc->ssb_PositionsInBurst->present) {

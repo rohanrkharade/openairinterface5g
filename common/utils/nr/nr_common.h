@@ -69,6 +69,8 @@ static inline const char *rnti_types(nr_rnti_type_t rr)
 
 #define MU_SCS(m) (15 << m)
 #define NR_3MHZ_NRB 15 // 38.101-1 Table 5.3.2-1 (Rel.18), 15 kHz SCS only
+// 38.211 7.4.3.1: with 3 MHz channel bandwidth, subcarriers 0 to 47 and 192 to 239 of the SSB are punctured
+#define NR_SSB_PUNCTURED_SC 48
 #define MAX_GSCN_BAND 620 // n78 has the highest GSCN range of 619
 #define NR_SYMBOLS_PER_SLOT 14
 #define NR_SYMBOLS_PER_SLOT_EXTENDED_CP 12
@@ -321,7 +323,8 @@ void get_samplerate_and_bw(int mu,
 uint32_t get_ssb_offset_to_pointA(uint32_t absoluteFrequencySSB,
                                   uint32_t absoluteFrequencyPointA,
                                   int ssbSubcarrierSpacing,
-                                  int frequency_range);
+                                  int frequency_range,
+                                  bool punctured);
 int get_ssb_subcarrier_offset(uint32_t absoluteFrequencySSB, uint32_t absoluteFrequencyPointA, int scs);
 int get_delay_idx(int delay, int max_delay_comp);
 

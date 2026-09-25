@@ -66,6 +66,7 @@ static void schedule_ssb(frame_t frame,
   LOG_D(NR_MAC,"Scheduling ssb %d at frame %d and slot %d\n", i_ssb, frame, slot);
 }
 
+// rbStart is the first RB of the SSB, after puncturing if applicable
 static void fill_ssb_vrb_map(NR_COMMON_channels_t *cc,
                              int rbStart,
                              int ssb_subcarrier_offset,
@@ -79,7 +80,8 @@ static void fill_ssb_vrb_map(NR_COMMON_channels_t *cc,
 
   uint16_t *vrb_map = cc[CC_id].vrb_map[beam];
   const int extra_prb = ssb_subcarrier_offset > 0;
-  for (int rb = 0; rb < 20 + extra_prb; rb++)
+  const int ssb_nb_rb = is_ssb_punctured(cc[CC_id].ServingCellConfigCommon) ? 20 - 2 * NR_SSB_PUNCTURED_SC / NR_NB_SC_PER_RB : 20;
+  for (int rb = 0; rb < ssb_nb_rb + extra_prb; rb++)
     vrb_map[rbStart + rb] = SL_to_bitmap(symStart % NR_SYMBOLS_PER_SLOT, 4);
 }
 

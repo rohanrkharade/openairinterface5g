@@ -494,7 +494,8 @@ static int handle_sync_req_from_mac(PHY_VARS_NR_UE *UE)
     int ssb_start_subcarrier = nr_get_ssb_start_sc(fp->numerology_index,
                                                    config->ssb_table.ssb_offset_point_a,
                                                    config->ssb_table.ssb_subcarrier_offset,
-                                                   fp->freq_range);
+                                                   fp->freq_range,
+                                                   fp->ssb_punctured);
     // SSB location can change during for ex: handover on the target cell
     if (ssb_start_subcarrier != fp->ssb_start_subcarrier) {
       fp->ssb_start_subcarrier = ssb_start_subcarrier;

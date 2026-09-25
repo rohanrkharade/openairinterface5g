@@ -401,7 +401,9 @@ int main(int argc, char **argv)
   do_tdd_config_sim(gNB, mu);
 
   phy_init_nr_gNB(gNB);
-  frame_parms->ssb_start_subcarrier = 12 * gNB->gNB_config.ssb_table.ssb_offset_point_a.value + ssb_subcarrier_offset;
+  frame_parms->ssb_start_subcarrier = 12 * gNB->gNB_config.ssb_table.ssb_offset_point_a.value + ssb_subcarrier_offset
+                                      - (frame_parms->ssb_punctured ? NR_SSB_PUNCTURED_SC : 0);
+  printf("SSB start subcarrier %d%s\n", frame_parms->ssb_start_subcarrier, frame_parms->ssb_punctured ? " (punctured SSB)" : "");
   initFloatingCoresTpool(ssb_scan_threads, &nrUE_params.Tpool, false, "UE-tpool");
 
   int n_hf = 0;

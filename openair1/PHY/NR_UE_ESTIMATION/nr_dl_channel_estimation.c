@@ -472,53 +472,21 @@ c32_t nr_pbch_dmrs_correlation(const NR_DL_FRAME_PARMS *frame_parms,
   c16_t pilot[200] __attribute__((aligned(16)));
   nr_pbch_dmrs_rx(dmrss, (uint32_t *)nr_gold_pbch, pilot, false);
   c32_t computed_val = {0};
+  // 3 DMRS per RB, 20 RBs in symbols 1 and 3, RBs 0 to 3 and 16 to 19 in symbol 2 (SSS in the middle)
+  const int num_pilots = dmrss == 1 ? 24 : 60;
   for (int aarx = 0; aarx < frame_parms->nb_antennas_rx; aarx++) {
-    int re_offset = ssb_start_subcarrier + k;
-    c16_t *pil = pilot;
     const c16_t *rxF = rxdataF[aarx];
-
-    DEBUG_PBCH("pbch ch est pilot RB_DL %d\n", frame_parms->N_RB_DL);
-    DEBUG_PBCH("k %u\n", k);
-
-    // Treat first 2 pilots specially (left edge)
-    computed_val = c32x16maddShift(*pil, rxF[re_offset], computed_val, 15);
-    DEBUG_PBCH("ch 0 %d\n", pil->r * rxF[re_offset].r - pil->i * rxF[re_offset].i);
-    DEBUG_PBCH("pilot 0 : rxF - > (%d,%d)  pil -> (%d,%d) \n", rxF[re_offset].r, rxF[re_offset].i, pil->r, pil->i);
-
-    pil++;
-    re_offset += 4;
-    computed_val = c32x16maddShift(*pil, rxF[re_offset], computed_val, 15);
-    DEBUG_PBCH("pilot 1 : rxF - > (%d,%d)  pil -> (%d,%d) \n", rxF[re_offset].r, rxF[re_offset].i, pil->r, pil->i);
-
-    pil++;
-    re_offset += 4;
-    computed_val = c32x16maddShift(*pil, rxF[re_offset], computed_val, 15);
-    DEBUG_PBCH("pilot 2 : rxF - > (%d,%d), pil -> (%d,%d) \n", rxF[re_offset].r, rxF[re_offset].i, pil->r, pil->i);
-
-    pil++;
-    re_offset += 4;
-
-    for (int pilot_cnt = 3; pilot_cnt < (3 * 20); pilot_cnt += 3) {
-      // in 2nd symbol, skip middle  REs (48 with DMRS,  144 for SSS, and another 48 with DMRS)
-      if (dmrss == 1 && pilot_cnt == 12) {
-	pilot_cnt=48;
-        re_offset += 144;
-      }
-      computed_val = c32x16maddShift(*pil, rxF[re_offset], computed_val, 15);
-      DEBUG_PBCH("pilot %u : rxF= (%d,%d) pil= (%d,%d) \n", pilot_cnt, rxF[re_offset].r, rxF[re_offset].i, pil->r, pil->i);
-
-      pil++;
-      re_offset += 4;
-      computed_val = c32x16maddShift(*pil, rxF[re_offset], computed_val, 15);
-      DEBUG_PBCH("pilot %u : rxF= (%d,%d) pil= (%d,%d) \n", pilot_cnt + 1, rxF[re_offset].r, rxF[re_offset].i, pil->r, pil->i);
-
-      pil++;
-      re_offset += 4;
-      computed_val = c32x16maddShift(*pil, rxF[re_offset], computed_val, 15);
-      DEBUG_PBCH("pilot %u : rxF= (%d,%d)  pil= (%d,%d) \n", pilot_cnt + 2, rxF[re_offset].r, rxF[re_offset].i, pil->r, pil->i);
-
-      pil++;
-      re_offset += 4;
+    for (int p = 0; p < num_pilots; p++) {
+      const int ssb_sc = k + 4 * p + ((dmrss == 1 && p >= 12) ? 144 : 0);
+      if (nr_ssb_sc_punctured(frame_parms, ssb_sc))
+        continue;
+      computed_val = c32x16maddShift(pilot[p], rxF[ssb_start_subcarrier + ssb_sc], computed_val, 15);
+      DEBUG_PBCH("pilot %d : rxF= (%d,%d) pil= (%d,%d) \n",
+                 p,
+                 rxF[ssb_start_subcarrier + ssb_sc].r,
+                 rxF[ssb_start_subcarrier + ssb_sc].i,
+                 pilot[p].r,
+                 pilot[p].i);
     }
   }
   return computed_val;
@@ -600,84 +568,32 @@ int nr_pbch_channel_estimation(const NR_DL_FRAME_PARMS *frame_parms,
   // Note: pilot returned by the following function is already the complex conjugate of the transmitted DMRS
   nr_pbch_dmrs_rx(dmrss, gold_seq, pilot, sidelink);
 
-  int re_offset = ssb_start_subcarrier + k;
-  const c16_t *pil = pilot;
   const c16_t *rxF = rxdataF;
-  c16_t *dl_ch = dl_ch_estimates;
-  memset(dl_ch, 0, sizeof(c16_t) * symb_sz);
+  memset(dl_ch_estimates, 0, sizeof(c16_t) * symb_sz);
 
   DEBUG_PBCH("pbch ch est pilot RB_DL %d\n", frame_parms->N_RB_DL);
   DEBUG_PBCH("k %d\n", k);
 
-  // Treat first 2 pilots specially (left edge)
-  c16_t ch;
-  ch = c16mulShift(*pil, rxF[re_offset], 15);
-  DEBUG_PBCH("pilot 0: rxF= (%d,%d), ch= (%d,%d), pil=(%d,%d)\n", rxF[re_offset].r, rxF[re_offset].i, ch.r, ch.i, pil->r, pil->i);
-
-  multadd_real_vector_complex_scalar(fl, ch, dl_ch, 16);
-  pil++;
-  re_offset += 4;
-  ch = c16mulShift(*pil, rxF[re_offset], 15);
-  DEBUG_PBCH("pilot 1: rxF= (%d,%d), ch= (%d,%d), pil=(%d,%d)\n", rxF[re_offset].r, rxF[re_offset].i, ch.r, ch.i, pil->r, pil->i);
-
-  multadd_real_vector_complex_scalar(fm, ch, dl_ch, 16);
-  pil++;
-  re_offset += 4;
-  ch = c16mulShift(*pil, rxF[re_offset], 15);
-  DEBUG_PBCH("pilot 2: rxF= (%d,%d), ch= (%d,%d), pil=(%d,%d)\n", rxF[re_offset].r, rxF[re_offset].i, ch.r, ch.i, pil->r, pil->i);
-
-  multadd_real_vector_complex_scalar(fr, ch, dl_ch, 16);
-  pil++;
-  re_offset += 4;
-  dl_ch += 12;
-
-  for (int pilot_cnt = 3; pilot_cnt < (3 * num_rbs); pilot_cnt += 3) {
-    // in 2nd symbol, skip middle  REs (48 with DMRS,  144 for SSS, and another 48 with DMRS)
-    if (dmrss == 1 && pilot_cnt == 12) {
-      pilot_cnt = 48;
-      re_offset += 144;
-      dl_ch += 144;
+  // 3 DMRS per RB, each one interpolated over 16 subcarriers starting at the first subcarrier of the RB
+  const int16_t *filt[3] = {fl, fm, fr};
+  const bool punctured = !sidelink && frame_parms->ssb_punctured;
+  for (int rb = 0; rb < num_rbs; rb++) {
+    // in 2nd symbol, skip middle RBs (SSS)
+    const bool sss_rb = !sidelink && dmrss == 1 && rb >= 4 && rb < 16;
+    // RBs not received with a punctured SSB (3 MHz channel bandwidth)
+    const bool punctured_rb = punctured && (rb < 4 || rb >= 16);
+    if (sss_rb || punctured_rb)
+      continue;
+    const int first_pilot = (!sidelink && dmrss == 1 && rb >= 16) ? 12 + 3 * (rb - 16) : 3 * rb;
+    const int re_offset = ssb_start_subcarrier + k + NR_NB_SC_PER_RB * rb;
+    c16_t *dl_ch = dl_ch_estimates + NR_NB_SC_PER_RB * rb;
+    for (int i = 0; i < 3; i++) {
+      const c16_t pil = pilot[first_pilot + i];
+      const c16_t rx = rxF[re_offset + 4 * i];
+      const c16_t ch = c16mulShift(pil, rx, 15);
+      DEBUG_PBCH("pilot %d: rxF=(%d,%d) ch=(%d,%d) pil=(%d,%d)\n", first_pilot + i, rx.r, rx.i, ch.r, ch.i, pil.r, pil.i);
+      multadd_real_vector_complex_scalar(filt[i], ch, dl_ch, 16);
     }
-    ch = c16mulShift(*pil, rxF[re_offset], 15);
-    DEBUG_PBCH("pilot %u: rxF=(%d,%d) ch=(%d,%d) pil=(%d,%d)\n",
-               pilot_cnt,
-               rxF[re_offset].r,
-               rxF[re_offset].i,
-               ch.r,
-               ch.i,
-               pil->r,
-               pil->i);
-
-    multadd_real_vector_complex_scalar(fl, ch, dl_ch, 16);
-    pil++;
-    re_offset += 4;
-    ch = c16mulShift(*pil, rxF[re_offset], 15);
-    DEBUG_PBCH("pilot %u: rxF=(%d,%d) ch=(%d,%d) pil=(%d,%d)\n",
-               pilot_cnt + 1,
-               rxF[re_offset].r,
-               rxF[re_offset].i,
-               ch.r,
-               ch.i,
-               pil->r,
-               pil->i);
-
-    multadd_real_vector_complex_scalar(fm, ch, dl_ch, 16);
-    pil++;
-    re_offset += 4;
-    ch = c16mulShift(*pil, rxF[re_offset], 15);
-    DEBUG_PBCH("pilot %u: rxF=(%d,%d) ch=(%d,%d) pil=(%d,%d)\n",
-               pilot_cnt + 2,
-               rxF[re_offset].r,
-               rxF[re_offset].i,
-               ch.r,
-               ch.i,
-               pil->r,
-               pil->i);
-
-    multadd_real_vector_complex_scalar(fr, ch, dl_ch, 16);
-    pil++;
-    re_offset += 4;
-    dl_ch += 12;
   }
 
   TracyCZoneEnd(ctx);

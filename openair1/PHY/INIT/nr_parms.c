@@ -317,6 +317,7 @@ void nr_init_frame_parms(nfapi_nr_config_request_scf_t* cfg, NR_DL_FRAME_PARMS *
                                                           + (fp->symbols_per_slot * fp->ofdm_symbol_size);
   fp->samples_per_frame = 10 * fp->samples_per_subframe;
   fp->freq_range = get_freq_range_from_freq(fp->dl_CarrierFreq);
+  fp->ssb_punctured = nr_is_3mhz_carrier(mu, fp->freq_range, fp->N_RB_DL);
 
   fp->Ncp = Ncp;
 
@@ -405,10 +406,12 @@ int nr_init_frame_parms_ue(NR_DL_FRAME_PARMS *fp, fapi_nr_config_request_t* conf
   fp->samples_per_frame = 10 * fp->samples_per_subframe;
   fp->freq_range = get_freq_range_from_freq(fp->dl_CarrierFreq);
 
+  fp->ssb_punctured = nr_is_3mhz_carrier(fp->numerology_index, fp->freq_range, fp->N_RB_DL);
   fp->ssb_start_subcarrier = nr_get_ssb_start_sc(config->ssb_config.scs_common,
                                                  config->ssb_table.ssb_offset_point_a,
                                                  config->ssb_table.ssb_subcarrier_offset,
-                                                 fp->freq_range);
+                                                 fp->freq_range,
+                                                 fp->ssb_punctured);
 
   set_Lmax(fp);
 
@@ -467,7 +470,9 @@ void nr_init_frame_parms_ue_sa(NR_DL_FRAME_PARMS *frame_parms, const nrUE_cell_p
                                              + (frame_parms->symbols_per_slot * frame_parms->ofdm_symbol_size);
   frame_parms->samples_per_frame = 10 * frame_parms->samples_per_subframe;
 
-  frame_parms->ssb_start_subcarrier = ssb_start_subcarrier;
+  // for a punctured SSB (3 MHz channel bandwidth), the configured SSB start is the one of the SSB after puncturing
+  frame_parms->ssb_punctured = nr_is_3mhz_carrier(mu, frame_parms->freq_range, N_RB_DL);
+  frame_parms->ssb_start_subcarrier = ssb_start_subcarrier - (frame_parms->ssb_punctured ? NR_SSB_PUNCTURED_SC : 0);
 
   LOG_W(PHY, "samples_per_subframe %d/per second %d, wCP %d\n", frame_parms->samples_per_subframe, 1000*frame_parms->samples_per_subframe, frame_parms->samples_per_subframe_wCP);
 }

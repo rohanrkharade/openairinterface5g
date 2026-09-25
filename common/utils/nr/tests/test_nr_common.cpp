@@ -229,6 +229,26 @@ TEST(nr_3mhz, ssb_raster)
   EXPECT_DEATH(check_ssb_raster(ssref_3mhz_from_gscn(31245), 8, 0, true), "Couldn't find band");
 }
 
+TEST(nr_3mhz, gscn_scan)
+{
+  // 3 MHz carrier in n100 from 920 MHz (PointA) to 922.7 MHz: the punctured SSB (12 RB = 2.16 MHz) fits for an SSREF
+  // between 921.08 and 921.62 MHz, i.e. GSCN 31242 (921.35 MHz) and 31244 (921.55 MHz), 31243 is not a 3 MHz GSCN of n100
+  nr_gscn_info_t info[MAX_GSCN_BAND];
+  const int n = get_scan_ssb_first_sc(921.35e6, 15, 100, 0, info);
+  ASSERT_EQ(n, 2);
+  const int expected[] = {31242, 31244};
+  for (int i = 0; i < n; i++) {
+    EXPECT_EQ(info[i].gscn, expected[i]);
+    EXPECT_EQ(info[i].ssRef, ssref_3mhz_from_gscn(info[i].gscn));
+    // first of the 240 subcarriers relative to PointA: the SSB after puncturing starts 48 subcarriers later
+    EXPECT_EQ(info[i].ssbFirstSC, (int)((info[i].ssRef - 920e6) / 15e3 - 120));
+    EXPECT_GE(info[i].ssbFirstSC + 48, 0);
+    EXPECT_LE(info[i].ssbFirstSC + 192, 15 * 12);
+  }
+  // not a 3 MHz band: normal raster, the 20 RB SSB does not fit in 15 PRB
+  EXPECT_EQ(get_scan_ssb_first_sc(1902.7e6, 15, 101, 0, info), 0);
+}
+
 TEST(nr_3mhz, carrier_within_band)
 {
   // 3 MHz channel (15 PRB) in n100: pointA 920 MHz, carrier center 921.35 MHz, channel 919.85 - 922.85 MHz

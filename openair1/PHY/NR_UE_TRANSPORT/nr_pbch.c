@@ -60,13 +60,15 @@ static uint16_t nr_pbch_extract(const NR_DL_FRAME_PARMS *frame_parms,
 
     for (rb=0; rb<20; rb++) {
       j=0;
+      // punctured RBs of the SSB (3 MHz channel bandwidth) are not received: zero, i.e. LLR 0 after compensation
+      const bool punctured_rb = frame_parms->ssb_punctured && (rb < 4 || rb > 15);
 
       if (symbol==1 || symbol==3) {
         for (i=0; i<12; i++) {
           if ((i!=nushiftmod4) &&
               (i!=(nushiftmod4+4)) &&
               (i!=(nushiftmod4+8))) {
-            rxF_ext[j]=rxF[rx_offset];
+            rxF_ext[j] = punctured_rb ? (c16_t){0} : rxF[rx_offset];
 #ifdef DEBUG_PBCH
             printf("rxF ext[%d] = (%d,%d) rxF [%u]= (%d,%d)\n",
 		   (9 * rb) + j,
@@ -89,7 +91,7 @@ static uint16_t nr_pbch_extract(const NR_DL_FRAME_PARMS *frame_parms,
             if ((i!=nushiftmod4) &&
                 (i!=(nushiftmod4+4)) &&
                 (i!=(nushiftmod4+8))) {
-              rxF_ext[j]=rxF[rx_offset];
+              rxF_ext[j] = punctured_rb ? (c16_t){0} : rxF[rx_offset];
 #ifdef DEBUG_PBCH
               printf("rxF ext[%d] = (%d,%d) rxF [%u]= (%d,%d)\n",
                      (rb < 4) ? (9 * rb) + j : (9 * (rb - 12)) + j,
@@ -300,7 +302,13 @@ void nr_generate_pbch_llr(const PHY_VARS_NR_UE *ue,
 
   if (symbolSSB == 1) {
     int avg[frame_parms->nb_antennas_rx];
-    nr_channel_level(0, PBCH_MAX_RE_PER_SYMBOL, dl_ch_estimates_ext, frame_parms->nb_antennas_rx, avg, nb_re);
+    if (frame_parms->ssb_punctured) {
+      // channel level of the 12 RBs of the SSB after puncturing only (9 PBCH REs per RB)
+      for (int aarx = 0; aarx < frame_parms->nb_antennas_rx; aarx++)
+        avg[aarx] = signal_energy_nodc(dl_ch_estimates_ext[aarx] + 4 * 9, 12 * 9);
+    } else {
+      nr_channel_level(0, PBCH_MAX_RE_PER_SYMBOL, dl_ch_estimates_ext, frame_parms->nb_antennas_rx, avg, nb_re);
+    }
     uint32_t max_h = avg[0];
     for (int i = 1; i < frame_parms->nb_antennas_rx; i++)
       max_h = cmax(avg[i], max_h);

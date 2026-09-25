@@ -1092,10 +1092,12 @@ int get_ssb_subcarrier_offset(uint32_t absoluteFrequencySSB, uint32_t absoluteFr
   return subcarrier_offset;
 }
 
+// offsetToPointA refers to the SSB after puncturing if applicable (38.211 4.4.4.2)
 uint32_t get_ssb_offset_to_pointA(uint32_t absoluteFrequencySSB,
                                   uint32_t absoluteFrequencyPointA,
                                   int ssbSubcarrierSpacing,
-                                  int frequency_range)
+                                  int frequency_range,
+                                  bool punctured)
 {
   // offset to pointA is expressed in terms of 15kHz SCS for FR1 and 60kHz for FR2
   // only difference wrt NR-ARFCN is delta frequency 5kHz if f < 3 GHz for ARFCN
@@ -1103,9 +1105,10 @@ uint32_t get_ssb_offset_to_pointA(uint32_t absoluteFrequencySSB,
   const int scaling_5khz = absoluteFrequencyPointA < 600000 ? 3 : 1;
   const int scaling = (absoluteFrequencyPointA >= 2016667) ? 1 << (ssbSubcarrierSpacing - 2) : 1 << ssbSubcarrierSpacing;
   const int scaled_abs_diff = absolute_diff / (scaling_5khz * scaling);
-  // absoluteFrequencySSB is the central frequency of SSB which is made by 20RBs in total
+  // absoluteFrequencySSB is the central frequency of SSB which is made by 20RBs in total, 12RBs after puncturing
   const int ssb_offset_scaling = (frequency_range == FR2) ? 1 << (ssbSubcarrierSpacing - 2) : 1 << ssbSubcarrierSpacing;
-  const int ssb_offset_point_a = ((scaled_abs_diff / 12) - 10) * ssb_offset_scaling;
+  const int ssb_half_rbs = punctured ? 10 - NR_SSB_PUNCTURED_SC / NR_NB_SC_PER_RB : 10;
+  const int ssb_offset_point_a = ((scaled_abs_diff / 12) - ssb_half_rbs) * ssb_offset_scaling;
   // Offset to point A needs to be divisible by scaling
   AssertFatal(ssb_offset_point_a % ssb_offset_scaling == 0, "PRB offset %d not valid for scs %d\n", ssb_offset_point_a, ssbSubcarrierSpacing);
   AssertFatal(ssb_offset_point_a >= 0, "ssb offset is negative %d for scs %d\n", ssb_offset_point_a, ssbSubcarrierSpacing);
@@ -1206,9 +1209,49 @@ static int get_ssb_first_sc(const double pointA, const double ssbCenter, const i
   return (int)((ssbCenter - pointA) / scs - (ssbRBs / 2 * NR_NB_SC_PER_RB));
 }
 
+// 38.101-1 Table 5.4.3.1-2: SSREF = N * 600 kHz + M * 50 kHz + 300 kHz, GSCN = 26638 + 3N + (M - 3) / 2
+static double get_ssref_from_gscn_3mhz(const int gscn)
+{
+  AssertFatal(gscn >= 26640 && gscn <= 31634, "Invalid GSCN %d for 3 MHz channel bandwidth\n", gscn);
+  const int n = gscn - 26638;
+  const int M = 3 + 2 * (((n % 3) + 1) % 3 - 1);
+  const int N = (n - (M - 3) / 2) / 3;
+  return N * 600e3 + M * 50e3 + 300e3;
+}
+
+// GSCNs of the 3 MHz raster for which the SSB after puncturing (12 RBs) is inside the carrier
+static int get_scan_ssb_first_sc_3mhz(const double fc, const int nbRB, const int nrBand, const int mu, nr_gscn_info_t ssbInfo[MAX_GSCN_BAND])
+{
+  const double scs = MU_SCS(mu) * 1e3;
+  const double startFreq = get_start_freq(fc, nbRB, mu);
+  const double stopFreq = get_stop_freq(fc, nbRB, mu);
+  const double half_ssb_bw = (120 - NR_SSB_PUNCTURED_SC) * scs;
+  int numGscn = 0;
+  for (int i = 0; i < sizeofArray(sync_raster_3mhz); i++) {
+    const sync_raster_t *r = &sync_raster_3mhz[i];
+    if (r->band != nrBand || r->scs_index != mu)
+      continue;
+    for (int g = r->first_gscn; g <= r->last_gscn && numGscn < MAX_GSCN_BAND; g += r->step_gscn) {
+      const double ssRef = get_ssref_from_gscn_3mhz(g);
+      if (ssRef - half_ssb_bw < startFreq || ssRef + half_ssb_bw > stopFreq)
+        continue;
+      ssbInfo[numGscn].ssRef = ssRef;
+      ssbInfo[numGscn].ssbFirstSC = get_ssb_first_sc(startFreq, ssRef, mu); // first of the 240 subcarriers, may be negative
+      ssbInfo[numGscn].gscn = g;
+      numGscn++;
+    }
+  }
+  if (numGscn == 0)
+    LOG_E(PHY, "no GSCN of the 3 MHz raster of band n%d in the carrier\n", nrBand);
+  return numGscn;
+}
+
 /* Returns array of first SCS offset in the scanning window */
 int get_scan_ssb_first_sc(const double fc, const int nbRB, const int nrBand, const int mu, nr_gscn_info_t ssbInfo[MAX_GSCN_BAND])
 {
+  if (nr_is_3mhz_carrier(mu, FR1, nbRB) && nr_band_supports_3mhz(nrBand))
+    return get_scan_ssb_first_sc_3mhz(fc, nbRB, nrBand, mu, ssbInfo);
+
   const double startFreq = get_start_freq(fc, nbRB, mu);
   const double stopFreq = get_stop_freq(fc, nbRB, mu);
 
