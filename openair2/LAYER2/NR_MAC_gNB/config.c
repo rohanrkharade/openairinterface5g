@@ -887,7 +887,7 @@ static int config_sched_ctrlSIB1(nr_cell_sched_t *cell)
   // CSET0 doesn't depend on SSB index
   fill_coresetZero(&sched_ctrlCommon->coreset, &type0_PDCCH_CSS_config);
   cell->cset0_bwp_start = type0_PDCCH_CSS_config.cset_start_rb;
-  cell->cset0_bwp_size = type0_PDCCH_CSS_config.num_rbs;
+  cell->cset0_bwp_size = type0_PDCCH_CSS_config.coreset0_size;
   int bwp_size = NRRIV2BW(scc->downlinkConfigCommon->initialDownlinkBWP->genericParameters.locationAndBandwidth, MAX_BWP_SIZE);
   int num_symb_cset = type0_PDCCH_CSS_config.num_symbols;
   if (type0_PDCCH_CSS_config.type0_pdcch_ss_mux_pattern > 1) {

@@ -185,7 +185,8 @@ static void nr_pdcch_extract_rbs_single(uint32_t rxdataF_sz,
                                         uint8_t *coreset_freq_dom,
                                         uint32_t rb_offset,
                                         uint32_t coreset_nbr_rb,
-                                        uint32_t n_BWP_start)
+                                        uint32_t n_BWP_start,
+                                        int coreset_rx_rb)
 {
   /*
    * This function is demapping DM-RS PDCCH RE
@@ -223,9 +224,11 @@ static void nr_pdcch_extract_rbs_single(uint32_t rxdataF_sz,
         const c16_t *rxF = rxFbase + RE_PER_RB * (c_rb + n_BWP_start);
 
         const int valid_re[RE_PER_RB_OUT_DMRS] = {0, 2, 3, 4, 6, 7, 8, 10, 11};
+        // RBs of a punctured CORESET 0 (3 MHz channel bandwidth) are not received: zero, i.e. LLR 0
+        const bool punctured = c_rb - start * 6 >= coreset_rx_rb;
         for (int i = 0; i < sizeofArray(valid_re); i++) {
-          *rxF_ext++ = rxF[valid_re[i]];
-          *dl_ch0_ext++ = dl_ch0[valid_re[i]];
+          *rxF_ext++ = punctured ? (c16_t){0} : rxF[valid_re[i]];
+          *dl_ch0_ext++ = punctured ? (c16_t){0} : dl_ch0[valid_re[i]];
         }
         dl_ch0 += RE_PER_RB;
       }
@@ -286,7 +289,8 @@ static void nr_rx_pdcch_symbol(PHY_VARS_NR_UE *ue,
   // generate pilot
   c16_t pilot[(n_rb + rb_offset + dmrs_ref) * 3] __attribute__((aligned(16)));
   // Note: pilot returned by the following function is already the complex conjugate of the transmitted DMRS
-  const uint32_t *gold = nr_gold_pdcch(fp->N_RB_DL, fp->symbols_per_slot, scrambling_id, proc->nr_slot_rx, symbol);
+  // a CORESET 0 punctured to the carrier (3 MHz channel bandwidth) is larger than the carrier
+  const uint32_t *gold = nr_gold_pdcch(cmax(fp->N_RB_DL, n_rb + rb_offset + dmrs_ref), fp->symbols_per_slot, scrambling_id, proc->nr_slot_rx, symbol);
   nr_pdcch_dmrs_ref(gold, pilot, n_rb + rb_offset + dmrs_ref);
   nr_pdcch_channel_estimation(fp,
                               n_rb,
@@ -298,7 +302,10 @@ static void nr_rx_pdcch_symbol(PHY_VARS_NR_UE *ue,
                               rxdataF,
                               pilot);
 
-  const int32_t rx_size = ceil_mod(fp->N_RB_DL * 12, 32);
+  const int32_t rx_size = ceil_mod(cmax(fp->N_RB_DL, n_rb) * 12, 32);
+  // RBs of the CORESET received: CORESET 0 after puncturing if any (38.211 7.3.2.2)
+  const int coreset_rx_rb =
+      coreset->CoreSetType == NFAPI_NR_CSET_CONFIG_MIB_SIB1 ? cmin(n_rb, phy_pdcch_config->pdcch_config[ss_idx].BWPSize) : n_rb;
   __attribute__((aligned(32))) c16_t rxdataF_ext[fp->nb_antennas_rx][rx_size];
   __attribute__((aligned(32))) c16_t pdcch_dl_ch_estimates_ext[fp->nb_antennas_rx][rx_size];
 
@@ -313,11 +320,12 @@ static void nr_rx_pdcch_symbol(PHY_VARS_NR_UE *ue,
                               coreset->frequency_domain_resource,
                               rb_offset,
                               n_rb,
-                              phy_pdcch_config->pdcch_config[ss_idx].BWPStart);
+                              phy_pdcch_config->pdcch_config[ss_idx].BWPStart,
+                              coreset_rx_rb);
 
   LOG_D(NR_PHY_DCI, "in channel level function (dl_ch_estimates_ext -> dl_ch_estimates_ext)\n");
   int avg[fp->nb_antennas_rx];
-  nr_channel_level(0, rx_size, pdcch_dl_ch_estimates_ext, fp->nb_antennas_rx, avg, n_rb * RE_PER_RB_OUT_DMRS);
+  nr_channel_level(0, rx_size, pdcch_dl_ch_estimates_ext, fp->nb_antennas_rx, avg, coreset_rx_rb * RE_PER_RB_OUT_DMRS);
   int avgs = avg[0];
   for (int i = 1; i < fp->nb_antennas_rx; i++)
       avgs = cmax(avgs, avg[i]);

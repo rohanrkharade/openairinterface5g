@@ -87,8 +87,8 @@ static const uint16_t NCS_unrestricted_delta_f_RA_15[16] = {0, 2, 4, 6, 8, 10, 1
 //	- $a: ($a)th of column in table, start from zero
 const int32_t table_38213_13_1_c1[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, reserved}; // index 15 reserved
 // 38.213 Table 13-0 (Rel-18): {15, 15} kHz, bands with minimum channel bandwidth 3 MHz, SSB on the 3 MHz raster
-// (index 0 to 9) or at GSCN 41638 of n100 (index 10 and 11). With 24 RBs in a 3 MHz (5 MHz) channel, the 9 (4)
-// highest RBs are punctured (38.211 7.3.2.2), which is not supported: only index 0 and 1 (12 RBs) are.
+// (index 0 to 9) or at GSCN 41638 of n100 (index 10 and 11, not supported). With 24 RBs in a 3 MHz channel, the 9
+// highest RBs are punctured (38.211 7.3.2.2), non-interleaved CCE to REG mapping for index 6 to 9.
 static const int32_t table_38213_13_0_c2[16] = {12, 12, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, reserved, reserved, reserved, reserved};
 static const int32_t table_38213_13_0_c3[16] = { 2,  3,  2,  2,  3,  3,  2,  2,  3,  3,  2,  3, reserved, reserved, reserved, reserved};
 static const int32_t table_38213_13_0_c4[16] = { 0,  0,  0,  2,  0,  2,  0,  2,  0,  2,  0,  0, reserved, reserved, reserved, reserved};
@@ -3806,6 +3806,8 @@ void get_type0_PDCCH_CSS_config_parameters(NR_Type0_PDCCH_CSS_config_t *type0_PD
   type0_PDCCH_CSS_config->num_rbs = -1;
   type0_PDCCH_CSS_config->num_symbols = -1;
   type0_PDCCH_CSS_config->rb_offset = -1;
+  type0_PDCCH_CSS_config->coreset0_size = -1;
+  type0_PDCCH_CSS_config->non_interleaved = false;
   LOG_D(NR_MAC,
         "NR_SubcarrierSpacing_kHz30 %d, scs_ssb %d, scs_pdcch %d, min_chan_bw %d\n",
         (int)NR_SubcarrierSpacing_kHz30,
@@ -3817,13 +3819,14 @@ void get_type0_PDCCH_CSS_config_parameters(NR_Type0_PDCCH_CSS_config_t *type0_PD
   switch(((int)scs_ssb << 3) | (int)scs_pdcch) {
     case (NR_SubcarrierSpacing_kHz15 << 3) | NR_SubcarrierSpacing_kHz15:
       if (ssb_3mhz_raster) {
-        AssertFatal(index_4msb < 2,
-                    "38.213 Table 13-0 index %d not supported, only index 0 and 1 (12 RBs, no puncturing)\n",
-                    index_4msb);
+        AssertFatal(index_4msb < 10, "38.213 Table 13-0 index %d not supported (only for SSB at n100 GSCN 41638)\n", index_4msb);
         type0_PDCCH_CSS_config->type0_pdcch_ss_mux_pattern = 1;
         type0_PDCCH_CSS_config->num_rbs = table_38213_13_0_c2[index_4msb];
         type0_PDCCH_CSS_config->num_symbols = table_38213_13_0_c3[index_4msb];
         type0_PDCCH_CSS_config->rb_offset = table_38213_13_0_c4[index_4msb];
+        // 24 RBs in a 3 MHz channel: the 9 highest RBs are punctured, 15 RBs form CORESET 0 (38.211 7.3.2.2)
+        type0_PDCCH_CSS_config->coreset0_size = type0_PDCCH_CSS_config->num_rbs == 24 ? NR_3MHZ_NRB : type0_PDCCH_CSS_config->num_rbs;
+        type0_PDCCH_CSS_config->non_interleaved = index_4msb >= 6;
         break;
       }
       AssertFatal(index_4msb < 15, "38.213 Table 13-1 4 MSB out of range\n");
@@ -3947,6 +3950,8 @@ void get_type0_PDCCH_CSS_config_parameters(NR_Type0_PDCCH_CSS_config_t *type0_PD
               (int)scs_ssb,
               (int)scs_pdcch);
   AssertFatal(type0_PDCCH_CSS_config->num_symbols != -1, "Type0 PDCCH coreset num_symbols undefined");
+  if (type0_PDCCH_CSS_config->coreset0_size == -1) // no puncturing
+    type0_PDCCH_CSS_config->coreset0_size = type0_PDCCH_CSS_config->num_rbs;
   AssertFatal(type0_PDCCH_CSS_config->rb_offset != -1, "Type0 PDCCH coreset rb_offset undefined");
 
   // type0-pdcch search space
@@ -4106,10 +4111,10 @@ void get_type0_PDCCH_CSS_config_parameters(NR_Type0_PDCCH_CSS_config_t *type0_PD
               type0_PDCCH_CSS_config->cset_start_rb,
               ssb_offset_point_a,
               type0_PDCCH_CSS_config->rb_offset);
-  AssertFatal(type0_PDCCH_CSS_config->cset_start_rb + type0_PDCCH_CSS_config->num_rbs <= grid_size,
+  AssertFatal(type0_PDCCH_CSS_config->cset_start_rb + type0_PDCCH_CSS_config->coreset0_size <= grid_size,
               "Invalid combination of start PRB %d and size %d of CSET0. Exceeds full BW %d\n",
               type0_PDCCH_CSS_config->cset_start_rb,
-              type0_PDCCH_CSS_config->num_rbs,
+              type0_PDCCH_CSS_config->coreset0_size,
               grid_size);
 }
 
@@ -4151,6 +4156,18 @@ void fill_coresetZero(NR_ControlResourceSet_t *coreset0, NR_Type0_PDCCH_CSS_conf
   coreset0->frequencyDomainResources.bits_unused = 3;
 
   coreset0->duration = duration;
+  if (type0_PDCCH_CSS_config->non_interleaved) { // 38.213 Table 13-0 index 6 to 9
+    if (coreset0->cce_REG_MappingType.present == NR_ControlResourceSet__cce_REG_MappingType_PR_interleaved)
+      free(coreset0->cce_REG_MappingType.choice.interleaved);
+    coreset0->cce_REG_MappingType.present = NR_ControlResourceSet__cce_REG_MappingType_PR_nonInterleaved;
+    coreset0->cce_REG_MappingType.choice.nonInterleaved = 0;
+    coreset0->precoderGranularity = NR_ControlResourceSet__precoderGranularity_sameAsREG_bundle;
+    coreset0->tci_StatesPDCCH_ToAddList = NULL;
+    coreset0->tci_StatesPDCCH_ToReleaseList = NULL;
+    coreset0->tci_PresentInDCI = NULL;
+    coreset0->pdcch_DMRS_ScramblingID = NULL;
+    return;
+  }
   coreset0->cce_REG_MappingType.present = NR_ControlResourceSet__cce_REG_MappingType_PR_interleaved;
   if (!coreset0->cce_REG_MappingType.choice.interleaved)
     coreset0->cce_REG_MappingType.choice.interleaved = calloc(1,sizeof(*coreset0->cce_REG_MappingType.choice.interleaved));

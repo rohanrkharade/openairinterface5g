@@ -144,7 +144,12 @@ void nr_generate_dci(PHY_VARS_gNB *gNB,
       
     /// DMRS QPSK modulation
     for (int symb = cset_start_symb; symb < cset_start_symb + pdcch_pdu_rel15->DurationSymbols; symb++) {
-      const uint32_t *gold = nr_gold_pdcch(frame_parms->N_RB_DL, frame_parms->symbols_per_slot, dci_pdu->ScramblingId, slot, symb);
+      // a CORESET 0 punctured to the carrier (3 MHz channel bandwidth) is larger than the carrier
+      const uint32_t *gold = nr_gold_pdcch(cmax(frame_parms->N_RB_DL, n_rb + rb_offset + pdcch_pdu_rel15->BWPStart),
+                                           frame_parms->symbols_per_slot,
+                                           dci_pdu->ScramblingId,
+                                           slot,
+                                           symb);
       nr_modulation(gold, dmrs_length, DMRS_MOD_ORDER, (int16_t *)mod_dmrs[symb]); // Qm = 2 as DMRS is QPSK modulated
 
 #ifdef DEBUG_PDCCH_DMRS
@@ -211,6 +216,11 @@ void nr_generate_dci(PHY_VARS_gNB *gNB,
     for(int symbol_idx = 0; symbol_idx < pdcch_pdu_rel15->DurationSymbols; symbol_idx++) {
       // allocating rbs per symbol
       for (int reg_count = 0; reg_count < num_regs; reg_count++) {
+        // CORESET 0 punctured to BWPSize RBs (3 MHz channel bandwidth, 38.211 7.3.2.2): REGs beyond are not transmitted
+        if (pdcch_pdu_rel15->CoreSetType == NFAPI_NR_CSET_CONFIG_MIB_SIB1 && reg_list[d][reg_count] >= pdcch_pdu_rel15->BWPSize) {
+          dci_idx += NR_NB_SC_PER_RB - 3; // 9 DCI REs per REG
+          continue;
+        }
         int k = cset_start_sc + reg_list[d][reg_count] * NR_NB_SC_PER_RB;
         LOG_D(NR_PHY_DCI, "REG %d k %d\n", reg_list[d][reg_count], k);
 

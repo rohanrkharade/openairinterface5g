@@ -912,7 +912,7 @@ static int nr_ue_process_dci_dl_10(NR_UE_MAC_INST_t *mac,
       (rnti_type == TYPE_P_RNTI_ || !current_DL_BWP || mac->get_sib1) ? NULL : current_DL_BWP->pdsch_Config;
   if (dci_ind->ss_type == NR_SearchSpace__searchSpaceType_PR_common) {
     dlsch_pdu->BWPSize =
-        mac->type0_PDCCH_CSS_config.num_rbs ? mac->type0_PDCCH_CSS_config.num_rbs : mac->sc_info.initial_dl_BWPSize;
+        mac->type0_PDCCH_CSS_config.num_rbs ? mac->type0_PDCCH_CSS_config.coreset0_size : mac->sc_info.initial_dl_BWPSize;
     dlsch_pdu->BWPStart = dci_ind->cset_start;
   } else {
     dlsch_pdu->BWPSize = current_DL_BWP->BWPSize;
@@ -3797,13 +3797,13 @@ static int get_nrb_for_dci(NR_UE_MAC_INST_t *mac, nr_dci_format_t dci_format, in
   if(current_DL_BWP)
     N_RB = get_rb_bwp_dci(dci_format,
                           ss_type,
-                          mac->type0_PDCCH_CSS_config.num_rbs,
+                          mac->type0_PDCCH_CSS_config.coreset0_size,
                           current_UL_BWP->BWPSize,
                           current_DL_BWP->BWPSize,
                           mac->sc_info.initial_dl_BWPSize,
                           mac->sc_info.initial_dl_BWPSize);
   else
-    N_RB = mac->type0_PDCCH_CSS_config.num_rbs;
+    N_RB = mac->type0_PDCCH_CSS_config.coreset0_size;
 
   if (N_RB == 0)
     LOG_E(NR_MAC_DCI, "DCI configuration error! N_RB = 0\n");

@@ -431,7 +431,9 @@ typedef enum nr_ssb_and_cset_mux_pattern_type_e {
 } nr_ssb_and_cset_mux_pattern_type_t;
 
 typedef struct Type0_PDCCH_CSS_config_s {
-  int32_t num_rbs;
+  int32_t num_rbs; // RBs of the CORESET before puncturing, for the CCE to REG mapping
+  int32_t coreset0_size; // RBs of CORESET 0 after puncturing if any (38.211 7.3.2.2), size for DCI and initial BWP
+  bool non_interleaved; // 38.213 Table 13-0 index 6 to 9
   int32_t num_symbols;
   int32_t rb_offset; // Offset from SSB RB0
   uint32_t type0_pdcch_ss_mux_pattern;

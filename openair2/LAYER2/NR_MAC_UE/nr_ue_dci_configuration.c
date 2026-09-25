@@ -186,7 +186,7 @@ static void config_dci_pdu(NR_UE_MAC_INST_t *mac,
                                rnti_type,
                                coreset,
                                ss->searchSpaceType->present,
-                               mac->type0_PDCCH_CSS_config.num_rbs,
+                               mac->type0_PDCCH_CSS_config.coreset0_size,
                                0);
       if (dci_format[i] == NR_UL_DCI_FORMAT_0_0)
         alt_size = nr_dci_size(current_DL_BWP,
@@ -198,7 +198,7 @@ static void config_dci_pdu(NR_UE_MAC_INST_t *mac,
                                rnti_type,
                                coreset,
                                ss->searchSpaceType->present,
-                               mac->type0_PDCCH_CSS_config.num_rbs,
+                               mac->type0_PDCCH_CSS_config.coreset0_size,
                                0);
     }
 
@@ -211,7 +211,7 @@ static void config_dci_pdu(NR_UE_MAC_INST_t *mac,
                                     rnti_type,
                                     coreset,
                                     ss->searchSpaceType->present,
-                                    mac->type0_PDCCH_CSS_config.num_rbs,
+                                    mac->type0_PDCCH_CSS_config.coreset0_size,
                                     alt_size);
     if (dci_size == 0)
       return;
@@ -226,7 +226,8 @@ static void config_dci_pdu(NR_UE_MAC_INST_t *mac,
     rel15->num_dci_options = 2;
 
   rel15->BWPStart = coreset_id == 0 ? mac->type0_PDCCH_CSS_config.cset_start_rb : current_DL_BWP->BWPStart;
-  rel15->BWPSize = coreset_id == 0 ? mac->type0_PDCCH_CSS_config.num_rbs : current_DL_BWP->BWPSize;
+  // CORESET 0 after puncturing if any: L1 does not receive the REGs beyond BWPSize
+  rel15->BWPSize = coreset_id == 0 ? mac->type0_PDCCH_CSS_config.coreset0_size : current_DL_BWP->BWPSize;
 
   int sps = 0;
   const BIT_STRING_t *monitoringSymbols = ss->monitoringSymbolsWithinSlot;

@@ -472,7 +472,8 @@ NR_sched_pdcch_t set_pdcch_structure(nr_cell_sched_t *cell,
     sps = bwp->cyclicPrefix == NULL ? 14 : 12;
   } else {
     AssertFatal(type0_PDCCH_CSS_config != NULL, "type0_PDCCH_CSS_config is null,bwp %p\n", bwp);
-    pdcch.BWPSize = type0_PDCCH_CSS_config->num_rbs;
+    // CORESET 0 after puncturing if any: L1 does not map the REGs beyond BWPSize
+    pdcch.BWPSize = type0_PDCCH_CSS_config->coreset0_size;
     pdcch.BWPStart = type0_PDCCH_CSS_config->cset_start_rb;
     pdcch.SubcarrierSpacing = type0_PDCCH_CSS_config->scs_pdcch;
     pdcch.CyclicPrefix = 0;
@@ -539,25 +540,37 @@ int find_pdcch_candidate(const nr_cell_sched_t *cell,
   const int C = R > 0 ? N_regs / (L * R) : 0;
   const int B_rb = L / N_symb; // nb of RBs occupied by each REG bundle
 
-  // loop over all the available candidates
-  // this implements TS 38.211 Sec. 7.3.2.2
-  for(int m = 0; m < nr_of_candidates; m++) { // loop over candidates
-    bool taken = false; // flag if the resource for a given candidate are taken
-    int first_cce = aggregation * ((Y + ((m * N_cces) / (aggregation * nr_of_candidates)) + N_ci) % (N_cces / aggregation));
-    LOG_D(NR_MAC,"Candidate %d of %d first_cce %d (L %d N_cces %d Y %d)\n", m, nr_of_candidates, first_cce, aggregation, N_cces, Y);
-    for (int j = first_cce; (j < first_cce + aggregation) && !taken; j++) { // loop over CCEs
-      for (int k = 6 * j / L; (k < (6 * j / L + 6 / L)) && !taken; k++) { // loop over REG bundles
-        int f = cce_to_reg_interleaving(R, k, pdcch->ShiftIndex, C, L, N_regs);
-        for(int rb = 0; rb < B_rb; rb++) { // loop over the RBs of the bundle
-          if(vrb_map[pdcch->BWPStart + f * B_rb + rb] & SL_to_bitmap(pdcch->StartSymbolIndex,N_symb)) {
-            taken = true;
-            break;
+  // CORESET 0 punctured to BWPSize RBs (3 MHz channel bandwidth, 38.211 7.3.2.2): the CCEs are numbered before
+  // puncturing, first look for a candidate without punctured REG, then accept punctured REGs
+  const int n_pass = N_rb > pdcch->BWPSize ? 2 : 1;
+  for (int pass = 0; pass < n_pass; pass++) {
+    const bool avoid_punctured = pass == 0 && n_pass == 2;
+    // loop over all the available candidates
+    // this implements TS 38.211 Sec. 7.3.2.2
+    for (int m = 0; m < nr_of_candidates; m++) { // loop over candidates
+      bool taken = false; // flag if the resource for a given candidate are taken
+      int first_cce = aggregation * ((Y + ((m * N_cces) / (aggregation * nr_of_candidates)) + N_ci) % (N_cces / aggregation));
+      LOG_D(NR_MAC, "Candidate %d of %d first_cce %d (L %d N_cces %d Y %d)\n", m, nr_of_candidates, first_cce, aggregation, N_cces, Y);
+      for (int j = first_cce; (j < first_cce + aggregation) && !taken; j++) { // loop over CCEs
+        for (int k = 6 * j / L; (k < (6 * j / L + 6 / L)) && !taken; k++) { // loop over REG bundles
+          int f = cce_to_reg_interleaving(R, k, pdcch->ShiftIndex, C, L, N_regs);
+          for (int rb = 0; rb < B_rb; rb++) { // loop over the RBs of the bundle
+            if (f * B_rb + rb >= pdcch->BWPSize) { // punctured
+              taken = avoid_punctured;
+              if (taken)
+                break;
+              continue;
+            }
+            if (vrb_map[pdcch->BWPStart + f * B_rb + rb] & SL_to_bitmap(pdcch->StartSymbolIndex, N_symb)) {
+              taken = true;
+              break;
+            }
           }
         }
       }
+      if (!taken)
+        return first_cce;
     }
-    if(!taken)
-      return first_cce;
   }
   return -1;
 }
@@ -622,7 +635,8 @@ void fill_pdcch_vrb_map(nr_cell_sched_t *cell,
     for (int k=6*j/L; k<(6*j/L+6/L); k++) { // loop over REG bundles
       int f = cce_to_reg_interleaving(R, k, n_shift, C, L, N_regs);
       for(int rb=0; rb<B_rb; rb++) // loop over the RBs of the bundle
-        vrb_map[pdcch->BWPStart + f*B_rb + rb] |= SL_to_bitmap(pdcch->StartSymbolIndex, N_symb);
+        if (f * B_rb + rb < pdcch->BWPSize) // not punctured (CORESET 0 with 3 MHz channel bandwidth)
+          vrb_map[pdcch->BWPStart + f * B_rb + rb] |= SL_to_bitmap(pdcch->StartSymbolIndex, N_symb);
     }
   }
 }
