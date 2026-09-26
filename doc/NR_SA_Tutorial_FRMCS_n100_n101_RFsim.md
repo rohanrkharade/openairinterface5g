@@ -390,8 +390,8 @@ Results of the reference run (AWGN channel model), see the outputs in
   band edges or the RF setup. The B205mini configurations still need to be
   tested over the air.
 - The OAI nrUE supports power class 3 (23 dBm, default) and 1 (31 dBm,
-  `--ue-power-class 1`). A-MPR and network signalling (NS) values of n100 are
-  not implemented. For n101 with power class 1, the MPR increase of more than
+  `--ue-power-class 1`). n100 and n101 have no additional emission requirement
+  (only NS_01, TS 38.101-1 Table 6.2.3.1-1), so no A-MPR applies. For n101 with power class 1, the MPR increase of more than
   50% or 75% of uplink symbols (TS 38.101-1 Table 6.2.2-4b, NOTE 2) is based on
   the uplink symbols of the TDD pattern.
 - 3 MHz channel bandwidth (Rel-18) limitations:
@@ -409,7 +409,9 @@ Results of the reference run (AWGN channel model), see the outputs in
     (`support3MHz-ChannelBW-Symmetric-r18`, `SupportedBandwidth-v1840`) are not
     signalled.
   - The punctured PBCH needs about 6 dB more SNR than the full PBCH for the
-    same BLER in `nr_pbchsim` (half of the PBCH REs are punctured).
+    same BLER in `nr_pbchsim`. This is inherent to the puncturing: half of the
+    864 coded bits are not transmitted, and 288 of the 512 bits of the polar
+    mother code have no received copy (code rate 0.25 instead of 0.11).
   - The UE-specific CORESET of BWPs below 24 PRBs has 2 symbols, with 3
     symbols the OAI UE did not decode the PDCCH after RRCSetup.
 - A CORESET#0 of 3 symbols must not be in the slot of the SSB: with
