@@ -880,7 +880,7 @@ static int config_sched_ctrlSIB1(nr_cell_sched_t *cell)
                                             i,
                                             ssb_frame_periodicity,
                                             prb_offset,
-                                            is_ssb_punctured(scc));
+                                            get_ssb_raster(scc));
       fill_searchSpaceZero(&sched_ctrlCommon->search_space[i], numb_slots_frame, &type0_PDCCH_CSS_config);
     }
   }

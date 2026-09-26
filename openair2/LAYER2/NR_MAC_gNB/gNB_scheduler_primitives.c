@@ -3926,6 +3926,16 @@ bool is_ssb_punctured(const NR_ServingCellConfigCommon_t *scc)
   return nr_is_3mhz_carrier(carrier->subcarrierSpacing, fr, carrier->carrierBandwidth);
 }
 
+/// synchronization raster of the SSB, it selects the CORESET#0 table (38.213 clause 13)
+nr_ssb_raster_t get_ssb_raster(const NR_ServingCellConfigCommon_t *scc)
+{
+  const NR_FrequencyInfoDL_t *dl = scc->downlinkConfigCommon->frequencyInfoDL;
+  const int band = *dl->frequencyBandList.list.array[0];
+  // NR-ARFCN below 3 GHz: 5 kHz steps (38.101-1 Table 5.4.2.1-1), the additional GSCNs are below 1 GHz
+  const uint64_t ssref_hz = *dl->absoluteFrequencySSB < 600000 ? *dl->absoluteFrequencySSB * 5000ULL : 0;
+  return nr_get_ssb_raster(band, ssref_hz, is_ssb_punctured(scc));
+}
+
 int get_max_ssbs(const NR_ServingCellConfigCommon_t *scc)
 {
   switch (scc->ssb_PositionsInBurst->present) {

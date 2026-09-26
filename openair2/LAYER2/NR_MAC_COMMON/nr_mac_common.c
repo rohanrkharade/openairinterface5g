@@ -87,8 +87,8 @@ static const uint16_t NCS_unrestricted_delta_f_RA_15[16] = {0, 2, 4, 6, 8, 10, 1
 //	- $a: ($a)th of column in table, start from zero
 const int32_t table_38213_13_1_c1[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, reserved}; // index 15 reserved
 // 38.213 Table 13-0 (Rel-18): {15, 15} kHz, bands with minimum channel bandwidth 3 MHz, SSB on the 3 MHz raster
-// (index 0 to 9) or at GSCN 41638 of n100 (index 10 and 11, not supported). With 24 RBs in a 3 MHz channel, the 9
-// highest RBs are punctured (38.211 7.3.2.2), non-interleaved CCE to REG mapping for index 6 to 9.
+// (index 0 to 9) or at GSCN 41638 of n100 (index 10 and 11). With 24 RBs in a 3 MHz channel, the 9 highest RBs are
+// punctured, in a 5 MHz channel the 4 highest ones (38.211 7.3.2.2), non-interleaved CCE to REG mapping for index 6 to 9.
 static const int32_t table_38213_13_0_c2[16] = {12, 12, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, reserved, reserved, reserved, reserved};
 static const int32_t table_38213_13_0_c3[16] = { 2,  3,  2,  2,  3,  3,  2,  2,  3,  3,  2,  3, reserved, reserved, reserved, reserved};
 static const int32_t table_38213_13_0_c4[16] = { 0,  0,  0,  2,  0,  2,  0,  2,  0,  2,  0,  0, reserved, reserved, reserved, reserved};
@@ -3765,7 +3765,7 @@ void get_type0_PDCCH_CSS_config_parameters(NR_Type0_PDCCH_CSS_config_t *type0_PD
                                            uint32_t ssb_index,
                                            uint32_t ssb_period,
                                            uint32_t ssb_offset_point_a,
-                                           bool ssb_3mhz_raster)
+                                           nr_ssb_raster_t ssb_raster)
 {
   if (!mib) {
     LOG_E(MAC, "get_type0_PDCCH_CSS_config_parameters() called while mib is not available, mac layer incoherency\n");
@@ -3818,15 +3818,22 @@ void get_type0_PDCCH_CSS_config_parameters(NR_Type0_PDCCH_CSS_config_t *type0_PD
   //  type0-pdcch coreset
   switch(((int)scs_ssb << 3) | (int)scs_pdcch) {
     case (NR_SubcarrierSpacing_kHz15 << 3) | NR_SubcarrierSpacing_kHz15:
-      if (ssb_3mhz_raster) {
-        AssertFatal(index_4msb < 10, "38.213 Table 13-0 index %d not supported (only for SSB at n100 GSCN 41638)\n", index_4msb);
+      if (ssb_raster != NR_SSB_RASTER_DEFAULT) {
+        // 38.213 clause 13: index 0 to 9 for an SSB on the 3 MHz raster, 10 and 11 for an SSB at n100 GSCN 41638
+        const bool gscn_41638 = ssb_raster == NR_SSB_RASTER_GSCN_41638;
+        AssertFatal(gscn_41638 ? index_4msb == 10 || index_4msb == 11 : index_4msb < 10,
+                    "38.213 Table 13-0 index %d not applicable to an SSB %s\n",
+                    index_4msb,
+                    gscn_41638 ? "at n100 GSCN 41638 (index 10 or 11)" : "on the 3 MHz synchronization raster (index 0 to 9)");
         type0_PDCCH_CSS_config->type0_pdcch_ss_mux_pattern = 1;
         type0_PDCCH_CSS_config->num_rbs = table_38213_13_0_c2[index_4msb];
         type0_PDCCH_CSS_config->num_symbols = table_38213_13_0_c3[index_4msb];
         type0_PDCCH_CSS_config->rb_offset = table_38213_13_0_c4[index_4msb];
-        // 24 RBs in a 3 MHz channel: the 9 highest RBs are punctured, 15 RBs form CORESET 0 (38.211 7.3.2.2)
-        type0_PDCCH_CSS_config->coreset0_size = type0_PDCCH_CSS_config->num_rbs == 24 ? NR_3MHZ_NRB : type0_PDCCH_CSS_config->num_rbs;
-        type0_PDCCH_CSS_config->non_interleaved = index_4msb >= 6;
+        // 24 RBs: in a 3 MHz channel the 9 highest RBs are punctured, 15 RBs form CORESET 0, in a 5 MHz channel (GSCN
+        // 41638) the 4 highest RBs are punctured, 20 RBs form CORESET 0 (38.211 7.3.2.2)
+        if (type0_PDCCH_CSS_config->num_rbs == 24)
+          type0_PDCCH_CSS_config->coreset0_size = gscn_41638 ? NR_GSCN_41638_CORESET0_NRB : NR_3MHZ_NRB;
+        type0_PDCCH_CSS_config->non_interleaved = index_4msb >= 6 && index_4msb <= 9;
         break;
       }
       AssertFatal(index_4msb < 15, "38.213 Table 13-1 4 MSB out of range\n");

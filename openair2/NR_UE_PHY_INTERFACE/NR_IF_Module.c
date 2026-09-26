@@ -119,6 +119,9 @@ static int handle_bcch_bch(NR_UE_MAC_INST_t *mac,
   mac->mib_additional_bits = additional_bits;
   mac->ssb_start_subcarrier = ssb_start_subcarrier;
   mac->ssb_punctured = ssb_punctured;
+  // NR-ARFCN below 3 GHz: 5 kHz steps (38.101-1 Table 5.4.2.1-1), the additional GSCNs are below 1 GHz
+  const uint64_t ssref_hz = ssb_arfcn < 600000 ? ssb_arfcn * 5000ULL : 0;
+  mac->ssb_raster = nr_get_ssb_raster(mac->nr_band, ssref_hz, ssb_punctured);
   if(ssb_length == 64) {
     mac->frequency_range = FR2;
     uint8_t ab = additional_bits & 0xff;

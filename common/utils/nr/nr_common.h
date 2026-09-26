@@ -71,6 +71,12 @@ static inline const char *rnti_types(nr_rnti_type_t rr)
 #define NR_3MHZ_NRB 15 // 38.101-1 Table 5.3.2-1 (Rel.18), 15 kHz SCS only
 // 38.211 7.4.3.1: with 3 MHz channel bandwidth, subcarriers 0 to 47 and 192 to 239 of the SSB are punctured
 #define NR_SSB_PUNCTURED_SC 48
+// 38.101-1 Table 5.4.3.1-3 (Rel.18): additional GSCNs of band n100
+#define NR_N100_GSCN_12PRB 41637 // 12 PRB transmission bandwidth in a 3 MHz channel, punctured SSB
+#define NR_N100_SSREF_12PRB 920730000ULL
+#define NR_N100_GSCN_20PRB 41638 // 20 PRB transmission bandwidth in a 5 MHz channel, SSB not punctured
+#define NR_N100_SSREF_20PRB 921450000ULL
+#define NR_GSCN_41638_CORESET0_NRB 20 // 38.211 7.3.2.2: CORESET 0 of 24 RBs punctured to 20 RBs in a 5 MHz channel
 #define MAX_GSCN_BAND 620 // n78 has the highest GSCN range of 619
 #define NR_SYMBOLS_PER_SLOT 14
 #define NR_SYMBOLS_PER_SLOT_EXTENDED_CP 12
@@ -139,6 +145,13 @@ typedef struct {
   double ssRef;
   int ssbFirstSC;
 } nr_gscn_info_t;
+
+// synchronization raster on which the SSB is, it selects the CORESET#0 table of 38.213 clause 13
+typedef enum {
+  NR_SSB_RASTER_DEFAULT = 0, // 38.101-1 Table 5.4.3.3-1: 38.213 Table 13-1 to 13-10
+  NR_SSB_RASTER_3MHZ, // Table 5.4.3.3-2 (incl. n100 GSCN 41637), punctured SSB: Table 13-0 index 0 to 9
+  NR_SSB_RASTER_GSCN_41638, // n100 GSCN 41638 (NOTE 12 of Table 5.4.3.3-1): Table 13-0 index 10 and 11
+} nr_ssb_raster_t;
 
 typedef enum frequency_range_e {
   FR1 = 0,
@@ -336,6 +349,8 @@ int get_scan_ssb_first_sc(const double fc,
 
 void check_ssb_raster(uint64_t freq, int band, int scs, bool is_3mhz);
 bool nr_band_supports_3mhz(int band);
+int nr_get_additional_gscn(int band, uint64_t ssref_hz);
+nr_ssb_raster_t nr_get_ssb_raster(int band, uint64_t ssref_hz, bool ssb_punctured);
 bool nr_band_supports_power_class_1(int band);
 bool nr_is_3mhz_carrier(int scs, frequency_range_t frequency_range, int n_rb);
 int get_nr_channel_bw_mhz(int scs, frequency_range_t frequency_range, int n_rb);

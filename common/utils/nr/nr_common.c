@@ -334,7 +334,7 @@ const sync_raster_t sync_raster[] = {
 
 // synchronization raster per band for 3 MHz channel bandwidth (Rel.18)
 // (38.101-1 Table 5.4.3.3-2), 15 PRB with punctured PBCH
-// the additional n100 GSCN 41637 (12 PRB) of Table 5.4.3.1-3 is not supported
+// plus the additional n100 GSCN 41637 (12 PRB) of Table 5.4.3.1-3, see nr_get_additional_gscn()
 // clang-format off
 static const sync_raster_t sync_raster_3mhz[] = {
   {26, 0, 30937, 1, 31100},
@@ -355,6 +355,29 @@ bool nr_band_supports_3mhz(int band)
     if (sync_raster_3mhz[i].band == band)
       return true;
   return false;
+}
+
+// 38.101-1 Table 5.4.3.1-3 (Rel.18): additional GSCNs of band n100 (not on the general synchronization raster formulas),
+// returns the GSCN of SSREF if it is one of them, 0 otherwise
+int nr_get_additional_gscn(int band, uint64_t ssref_hz)
+{
+  if (band != 100)
+    return 0;
+  if (ssref_hz == NR_N100_SSREF_12PRB)
+    return NR_N100_GSCN_12PRB;
+  if (ssref_hz == NR_N100_SSREF_20PRB)
+    return NR_N100_GSCN_20PRB;
+  return 0;
+}
+
+// raster of an SSB at SSREF: a punctured SSB (3 MHz channel bandwidth) is on the 3 MHz raster, GSCN 41637 included
+nr_ssb_raster_t nr_get_ssb_raster(int band, uint64_t ssref_hz, bool ssb_punctured)
+{
+  if (ssb_punctured)
+    return NR_SSB_RASTER_3MHZ;
+  if (nr_get_additional_gscn(band, ssref_hz) == NR_N100_GSCN_20PRB)
+    return NR_SSB_RASTER_GSCN_41638;
+  return NR_SSB_RASTER_DEFAULT;
 }
 
 // 38.101-1 Table 6.2.1-1 (Rel.18): bands with power class 1 (31 dBm). In n100 and n101 (NOTE 8), only for FRMCS cab
@@ -393,6 +416,12 @@ void check_ssb_raster(uint64_t freq, int band, int scs, bool is_3mhz)
   for (int i = 0; i < raster_size; i++)
     band_found |= raster[i].band == band && raster[i].scs_index == scs;
   AssertFatal(band_found, "Couldn't find band %d with SCS %d%s\n", band, scs, is_3mhz ? " for 3 MHz channel bandwidth" : "");
+  // 38.101-1 Table 5.4.3.1-3: GSCN 41637 only with 3 MHz, GSCN 41638 only with 5 MHz channel bandwidth (15 kHz SSB)
+  const int additional_gscn = nr_get_additional_gscn(band, freq);
+  if (additional_gscn == NR_N100_GSCN_12PRB && is_3mhz)
+    return;
+  if (additional_gscn == NR_N100_GSCN_20PRB && !is_3mhz && scs == 0)
+    return;
   int gscn;
   if (is_3mhz) {
     // 38.101-1 Table 5.4.3.1-2: SSREF = N * 600 kHz + M * 50 kHz + 300 kHz, GSCN = 26638 + 3N + (M - 3) / 2
@@ -1248,6 +1277,28 @@ static double get_ssref_from_gscn_3mhz(const int gscn)
   return N * 600e3 + M * 50e3 + 300e3;
 }
 
+// 38.101-1 Table 5.4.3.1-3: additional n100 GSCN (41637 with 3 MHz, 41638 otherwise) if its SSB is inside [start, stop]
+static int add_scan_additional_gscn(const double startFreq,
+                                    const double stopFreq,
+                                    const int nrBand,
+                                    const int mu,
+                                    const bool is_3mhz,
+                                    int numGscn,
+                                    nr_gscn_info_t ssbInfo[MAX_GSCN_BAND])
+{
+  if (nrBand != 100 || mu != 0 || numGscn >= MAX_GSCN_BAND)
+    return numGscn;
+  const double scs = MU_SCS(mu) * 1e3;
+  const double ssRef = is_3mhz ? NR_N100_SSREF_12PRB : NR_N100_SSREF_20PRB;
+  const double half_ssb_bw = (is_3mhz ? 120 - NR_SSB_PUNCTURED_SC : 120) * scs;
+  if (ssRef - half_ssb_bw < startFreq || ssRef + half_ssb_bw > stopFreq)
+    return numGscn;
+  ssbInfo[numGscn].ssRef = ssRef;
+  ssbInfo[numGscn].ssbFirstSC = get_ssb_first_sc(startFreq, ssRef, mu);
+  ssbInfo[numGscn].gscn = is_3mhz ? NR_N100_GSCN_12PRB : NR_N100_GSCN_20PRB;
+  return numGscn + 1;
+}
+
 // GSCNs of the 3 MHz raster for which the SSB after puncturing (12 RBs) is inside the carrier
 static int get_scan_ssb_first_sc_3mhz(const double fc, const int nbRB, const int nrBand, const int mu, nr_gscn_info_t ssbInfo[MAX_GSCN_BAND])
 {
@@ -1270,6 +1321,7 @@ static int get_scan_ssb_first_sc_3mhz(const double fc, const int nbRB, const int
       numGscn++;
     }
   }
+  numGscn = add_scan_additional_gscn(startFreq, stopFreq, nrBand, mu, true, numGscn, ssbInfo);
   if (numGscn == 0)
     LOG_E(PHY, "no GSCN of the 3 MHz raster of band n%d in the carrier\n", nrBand);
   return numGscn;
@@ -1306,6 +1358,7 @@ int get_scan_ssb_first_sc(const double fc, const int nbRB, const int nrBand, con
     ssbInfo[numGscn].gscn = g;
     numGscn++;
   }
+  numGscn = add_scan_additional_gscn(startFreq, stopFreq, nrBand, mu, false, numGscn, ssbInfo);
 
   return numGscn;
 }

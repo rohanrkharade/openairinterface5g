@@ -487,6 +487,53 @@ static void check_carriers_within_band(const NR_ServingCellConfigCommon_t *scc)
   check_carrier_within_band(ul_band, *ul->absoluteFrequencyPointA, ul->scs_SpecificCarrierList.list.array[0], true);
 }
 
+// 38.101-1 Table 5.4.3.1-3 (Rel.18): an SSB at the additional n100 GSCN 41637 (41638) is only for a 12 PRB (20 PRB)
+// transmission bandwidth in a 3 MHz (5 MHz) channel, carrierBandwidth is 15 (25) PRBs (38.331 SCS-SpecificCarrier),
+// the CORESET#0 is given by 38.213 Table 13-0 index 0 or 1 (10 or 11)
+static void check_additional_gscn(const NR_ServingCellConfigCommon_t *scc, uint64_t ssb_freq)
+{
+  const NR_FrequencyInfoDL_t *dl = scc->downlinkConfigCommon->frequencyInfoDL;
+  const int gscn = nr_get_additional_gscn(*dl->frequencyBandList.list.array[0], ssb_freq);
+  if (gscn == 0)
+    return;
+  const bool gscn_12prb = gscn == NR_N100_GSCN_12PRB;
+  const int carrier_nrb = gscn_12prb ? NR_3MHZ_NRB : 25;
+  const int tx_nrb = gscn_12prb ? 12 : 20;
+  const NR_SCS_SpecificCarrier_t *carrier = dl->scs_SpecificCarrierList.list.array[0];
+  AssertFatal(carrier->subcarrierSpacing == NR_SubcarrierSpacing_kHz15 && carrier->carrierBandwidth == carrier_nrb,
+              "SSB at GSCN %d requires a DL carrier of %d PRBs with 15 kHz SCS (38.101-1 Table 5.4.3.1-3)\n",
+              gscn,
+              carrier_nrb);
+  const NR_PDCCH_ConfigCommon_t *pdcch = scc->downlinkConfigCommon->initialDownlinkBWP->pdcch_ConfigCommon->choice.setup;
+  const long cs0 = pdcch->controlResourceSetZero ? *pdcch->controlResourceSetZero : -1;
+  AssertFatal(gscn_12prb ? cs0 == 0 || cs0 == 1 : cs0 == 10 || cs0 == 11,
+              "SSB at GSCN %d requires controlResourceSetZero %s (38.213 Table 13-0), configured %ld\n",
+              gscn,
+              gscn_12prb ? "0 or 1 (12 RBs)" : "10 or 11 (24 RBs punctured to 20)",
+              cs0);
+  // in DL, the transmission bandwidth contains the CORESET#0 (offset 0 to the SSB, 12 or 20 RBs after puncturing), i.e.
+  // it is made of the RBs of the CORESET#0: the initial DL BWP has to be inside
+  const int tx_start = get_ssb_offset_to_pointA(*dl->absoluteFrequencySSB, dl->absoluteFrequencyPointA, 0, FR1, gscn_12prb);
+  const long dl_bwp = scc->downlinkConfigCommon->initialDownlinkBWP->genericParameters.locationAndBandwidth;
+  const int dl_start = NRRIV2PRBOFFSET(dl_bwp, MAX_BWP_SIZE);
+  const int dl_size = NRRIV2BW(dl_bwp, MAX_BWP_SIZE);
+  AssertFatal(dl_start >= tx_start && dl_start + dl_size <= tx_start + tx_nrb,
+              "SSB at GSCN %d: the initial DL BWP (PRB %d to %d) has to be inside the %d PRB transmission bandwidth (PRB %d to "
+              "%d)\n",
+              gscn,
+              dl_start,
+              dl_start + dl_size - 1,
+              tx_nrb,
+              tx_start,
+              tx_start + tx_nrb - 1);
+  const int ul_size = NRRIV2BW(scc->uplinkConfigCommon->initialUplinkBWP->genericParameters.locationAndBandwidth, MAX_BWP_SIZE);
+  AssertFatal(ul_size <= tx_nrb,
+              "SSB at GSCN %d: the initial UL BWP (%d PRBs) exceeds the %d PRB transmission bandwidth\n",
+              gscn,
+              ul_size,
+              tx_nrb);
+}
+
 void fix_scc(NR_ServingCellConfigCommon_t *scc, uint64_t ssbmap)
 {
   scc->ssb_PositionsInBurst->present = get_ssb_len(scc);
@@ -975,6 +1022,7 @@ static NR_ServingCellConfigCommon_t *get_scc_config(int minRXTXTIME, int do_SRS)
         nr_is_3mhz_carrier(dl_carrier->subcarrierSpacing, get_freq_range_from_band(dl_band), dl_carrier->carrierBandwidth);
     if (IS_SA_MODE(get_softmodem_params()))
       check_ssb_raster(ssb_freq, dl_band, *scc->ssbSubcarrierSpacing, is_3mhz);
+    check_additional_gscn(scc, ssb_freq);
     fix_scc(scc, ssb_bitmap);
     check_carriers_within_band(scc);
   }

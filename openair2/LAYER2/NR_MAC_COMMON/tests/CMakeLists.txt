@@ -6,3 +6,12 @@ target_link_libraries(test_lut_dmrs PRIVATE
     minimal_lib m)
 add_dependencies(tests test_lut_dmrs)
 add_test(NAME test_lut_dmrs COMMAND test_lut_dmrs)
+
+add_executable(test_type0_coreset test_type0_coreset.c)
+target_link_libraries(test_type0_coreset PRIVATE
+    MAC_NR_COMMON
+    nr_common
+    asn1_nr_rrc_hdrs
+    minimal_lib m)
+add_dependencies(tests test_type0_coreset)
+add_test(NAME test_type0_coreset COMMAND test_type0_coreset)

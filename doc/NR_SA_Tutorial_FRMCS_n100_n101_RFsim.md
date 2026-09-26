@@ -25,10 +25,10 @@ are included in [Reference logs](#7-reference-logs).
 
 | Band | Duplex | UL (MHz)       | DL (MHz)       | NR-ARFCN (DL)   | GSCN                                   |
 |------|--------|----------------|----------------|-----------------|----------------------------------------|
-| n100 | FDD    | 874.4 - 880    | 919.4 - 925    | 183880 - 185000 | 2303 - 2307 (15 kHz), 3 MHz raster: 31240 - 31242, 31244 - 31253 |
+| n100 | FDD    | 874.4 - 880    | 919.4 - 925    | 183880 - 185000 | 2303 - 2307 (15 kHz), 3 MHz raster: 31240 - 31242, 31244 - 31253, additional: 41637, 41638 |
 | n101 | TDD    | 1900 - 1910    | 1900 - 1910    | 380000 - 382000 | 4754 - 4768 (15 kHz), 4760 - 4764 (30 kHz) |
 
-Four scenarios are provided. Each one has a gNB configuration file in
+Six scenarios are provided. Each one has a gNB configuration file in
 `ci-scripts/conf_files/` and a docker-compose file in `ci-scripts/yaml_files/`.
 
 | Scenario                        | Bandwidth, SCS  | PointA (DL)           | Carrier center | SSB                           | CORESET0 | UE finds the SSB    |
@@ -37,11 +37,14 @@ Four scenarios are provided. Each one has a gNB configuration file in
 | `5g_rfsimulator_n101_u0_25prb`  | 5 MHz, 15 kHz   | 380090 (1900.45 MHz)  | 1902.7 MHz     | 380450, 1902.25 MHz, GSCN 4756 | index 0 | scan (`--ue-scan-carrier`) |
 | `5g_rfsimulator_n101_u1_24prb`  | 10 MHz, 30 kHz  | 380136 (1900.68 MHz)  | 1905.0 MHz     | 380910, 1904.55 MHz, GSCN 4761 | index 0 | scan (`--ue-scan-carrier`) |
 | `5g_rfsimulator_n100_3mhz`      | 3 MHz, 15 kHz   | 184010 (920.05 MHz)   | 921.4 MHz      | 184310, 921.55 MHz, 3 MHz raster GSCN 31244 | index 0 (Table 13-0) | given (`--ssb 28`) |
+| `5g_rfsimulator_n100_gscn41637` | 3 MHz (12 PRB used), 15 kHz | 183930 (919.65 MHz) | 921.0 MHz | 184146, 920.73 MHz, GSCN 41637 | index 0 (Table 13-0) | scan (`--ue-scan-carrier`) |
+| `5g_rfsimulator_n100_gscn41638` | 5 MHz (20 PRB used), 15 kHz | 183930 (919.65 MHz) | 921.9 MHz | 184290, 921.45 MHz, GSCN 41638 | index 10 (Table 13-0) | scan (`--ue-scan-carrier`) |
 
 - n100 uses a 45 MHz duplex spacing: the UL carrier is at 877.0 MHz (PointA
   174950, 874.75 MHz).
 - n101 uses a 5 ms TDD pattern.
-- The 3 MHz scenario is described in [3 MHz channel bandwidth](#3-mhz-channel-bandwidth).
+- The 3 MHz scenario is described in [3 MHz channel bandwidth](#3-mhz-channel-bandwidth), the GSCN 41637 and
+  41638 scenarios in [12 and 20 PRB transmission bandwidth](#12-and-20-prb-transmission-bandwidth-gscn-41637-and-41638).
 - In all scenarios, the whole channel bandwidth, including the guard bands,
   lies inside the band. The gNB checks this at startup and prints an error
   (RBs outside the band) or a warning (guard bands outside the band)
@@ -77,6 +80,45 @@ no 3 MHz channel bandwidth. The scenario `5g_rfsimulator_n100_3mhz` uses
   all the RBs of CORESET#0 in symbols 2 to 5 and SIB1 does not fit.
 - At most 11 UEs: the PUCCH format 0/1 resources are 1 PRB per UE, next to 4
   PRBs of PUCCH format 2.
+
+### 12 and 20 PRB transmission bandwidth (GSCN 41637 and 41638)
+
+Rel-18 defines two additional SSB positions for n100 only, outside the
+synchronization raster formulas (TS 38.101-1 Table 5.4.3.1-3), for a
+transmission bandwidth smaller than the channel:
+
+| GSCN  | SSREF      | Channel | Transmission bandwidth | SSB        | CORESET#0 (TS 38.213 Table 13-0)             |
+|-------|------------|---------|------------------------|------------|----------------------------------------------|
+| 41637 | 920.73 MHz | 3 MHz   | 12 PRB                 | punctured  | index 0 or 1: 12 RB, 2 or 3 symbols (index 2 to 9 are 15 RB, more than 12 PRB) |
+| 41638 | 921.45 MHz | 5 MHz   | 20 PRB                 | full       | index 10 or 11: 24 RB punctured to 20 RB, interleaved, 2 or 3 symbols, offset 0 |
+
+`carrierBandwidth` stays 15 or 25 PRB (TS 38.331 `SCS-SpecificCarrier`), the
+UE uses 12 or 20 PRB. In both scenarios, PointA is 919.65 MHz and the SSB
+(after puncturing for 41637) starts at PointA, so CORESET#0 is RB 0 to 11 or
+0 to 19, and so is the initial DL BWP. With 25 PRB, the channel is 919.4 -
+924.4 MHz, its lower edge is the band edge.
+
+- `ci-scripts/conf_files/gnb.sa.band100.12prb.gscn41637.rfsim.conf`: 15 PRB
+  carrier, SSB 184146, CORESET#0 index 0, initial DL and UL BWPs of 12 PRB,
+  `searchSpaceZero` 2. UE: `-r 15 -C 921000000`.
+- `ci-scripts/conf_files/gnb.sa.band100.20prb.gscn41638.rfsim.conf`: 25 PRB
+  carrier, SSB 184290, CORESET#0 index 10, initial DL and UL BWPs of 20 PRB,
+  `searchSpaceZero` 2 (the SSB covers all the RBs of CORESET#0 in slot 0).
+  UE: `-r 25 -C 921900000`. Index 11 (3 symbols) needs
+  `dmrs_TypeA_Position = 1`.
+
+The gNB stops at startup if the carrier, CORESET#0 index or initial BWPs do not
+match the GSCN. The UE selects Table 13-0 index 10 and 11 from the SSB
+frequency. With `--ue-scan-carrier`, the UE also scans the additional GSCN if
+its SSB is in the carrier:
+
+```
+[NR_PHY] I Scanning GSCN: 2303, with SSB offset: 13, SSB Freq: 921650000.000000
+[NR_PHY] I Scanning GSCN: 2304, with SSB offset: 20, SSB Freq: 921750000.000000
+[NR_PHY] I Scanning GSCN: 2305, with SSB offset: 26, SSB Freq: 921850000.000000
+[NR_PHY] I Scanning GSCN: 41638, with SSB offset: 0, SSB Freq: 921450000.000000
+[NR_PHY] I Cell Detected with GSCN: 41638, SSB SC offset: 0, SSB Ref: 921450000.000000, PSS Corr peak: 112 dB, PSS Corr Average: 79
+```
 
 ```mermaid
 flowchart LR
@@ -348,14 +390,15 @@ docker compose down -t 5
 The same scenarios are defined as CI tests in
 `ci-scripts/xml_files/container_5g_rfsim_n100.xml`,
 `container_5g_rfsim_n101_u0_25prb.xml`,
-`container_5g_rfsim_n101_u1_24prb.xml` and
-`container_5g_rfsim_n100_3mhz.xml`.
+`container_5g_rfsim_n101_u1_24prb.xml`,
+`container_5g_rfsim_n100_3mhz.xml`, `container_5g_rfsim_n100_gscn41637.xml` and
+`container_5g_rfsim_n100_gscn41638.xml`.
 
 ## 7. Reference logs
 
 Full gNB and UE logs, and ping and iperf3 outputs, of a reference run of each
 scenario, with images built from the `develop` branch of this repository
-(commit `ddaacaf2f5`, 2026-09-25):
+(commit `ddaacaf2f5`, 2026-09-25; GSCN 41637 and 41638: the commit that adds them, 2026-09-26):
 
 | Scenario | gNB log | UE log | Ping | Ping | iperf3 | iperf3 |
 |---|---|---|---|---|---|---|
@@ -364,6 +407,8 @@ scenario, with images built from the `develop` branch of this repository
 | n101, TDD, 10 MHz, 30 kHz | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/gnb-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/nr-ue-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/ping-ue-to-dn.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/ping-dn-to-ue.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/iperf3-dl.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n101_u1_24prb/iperf3-ul.txt) |
 | n100, FDD, 3 MHz, 15 kHz | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/gnb-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/nr-ue-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/ping-ue-to-dn.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/ping-dn-to-ue.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/iperf3-dl.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/iperf3-ul.txt) |
 | n100, 3 MHz, UE scanning | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/gnb-scan-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/nr-ue-scan-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/ping-ue-to-dn-scan.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/ping-dn-to-ue-scan.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/iperf3-dl-scan.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n100_3mhz/iperf3-ul-scan.txt) |
+| n100, GSCN 41637, 12 PRB, UE scanning | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41637/gnb-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41637/nr-ue-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41637/ping-ue-to-dn.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41637/ping-dn-to-ue.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41637/iperf3-dl.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41637/iperf3-ul.txt) |
+| n100, GSCN 41638, 20 PRB, UE scanning | [gNB](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41638/gnb-log.txt) | [UE](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41638/nr-ue-log.txt) | [UE to DN](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41638/ping-ue-to-dn.txt) | [DN to UE](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41638/ping-dn-to-ue.txt) | [DL](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41638/iperf3-dl.txt) | [UL](./tutorial_resources/frmcs_n100_n101/logs/n100_gscn41638/iperf3-ul.txt) |
 
 > **Note:** The UE logs contain the Ki/OPc of the test SIM configured in
 > `ci-scripts/conf_files/nrue.uicc.conf` and keys derived from them. These are
@@ -381,6 +426,8 @@ Results of the reference run (AWGN channel model), see the outputs in
 | n101, 10 MHz, 30 kHz      | yes    | 0% loss (26.0 ms)       | 0% loss (23.8 ms)       | 3.02 Mbps, 0/5222 lost    | 998 kbps, 0/1727 lost     |
 | n100, 3 MHz, 15 kHz       | yes    | 0% loss (32.1 ms)       | 0% loss (40.0 ms)       | 3.02 Mbps, 0/5209 lost    | 994 kbps, 0/1723 lost     |
 | n100, 3 MHz, UE scanning  | yes    | 0% loss (31.8 ms)       | 0% loss (81.2 ms)       | 3.01 Mbps, 0/5190 lost    | 994 kbps, 0/1727 lost     |
+| n100, GSCN 41637, 12 PRB  | yes    | 0% loss (26.5 ms)       | 0% loss (27.0 ms)       | 3.02 Mbps, 0/5212 lost    | 998 kbps, 0/1727 lost     |
+| n100, GSCN 41638, 20 PRB  | yes    | 0% loss (22.1 ms)       | 0% loss (21.6 ms)       | 3.01 Mbps, 0/5202 lost    | 997 kbps, 0/1727 lost     |
 
 ## 9. Limitations
 
@@ -403,8 +450,14 @@ Results of the reference run (AWGN channel model), see the outputs in
     Tested end to end: index 0 to 9. The configurations with 3 symbols (index
     1, 4, 5, 8 and 9) need `dmrs_TypeA_Position = 1` (pos3), since SIB1 starts
     at symbol 3.
-  - The additional n100 GSCNs 41637 (12 PRB) and 41638 (5 MHz, 20 PRB, Table
-    13-0 index 10 and 11) are not supported.
+  - Additional n100 GSCNs 41637 and 41638: TS 38.101-1 does not say where the
+    12 or 20 PRB transmission bandwidth is in the channel. OAI takes the RBs of
+    CORESET#0 (initial DL BWP inside them, UL BWP of at most 12 or 20 PRB). The
+    Rel-18 UE capabilities `support12PRB-CORESET0-r18`,
+    `support12PRB-CORESET0-GSCN-41637-r18` and
+    `support5MHz-ChannelBW-20PRB-CORESET0-r18` are not signalled (Rel-17
+    ASN.1). With 12 PRB, the UE-specific CORESET has 4 CCEs: in the SIB1 slots,
+    some UL grants cannot be sent (`CCE fail` in the MAC statistics).
   - The RRC ASN.1 is Rel-17: the Rel-18 UE capabilities for 3 MHz
     (`support3MHz-ChannelBW-Symmetric-r18`, `SupportedBandwidth-v1840`) are not
     signalled.
@@ -412,8 +465,8 @@ Results of the reference run (AWGN channel model), see the outputs in
     same BLER in `nr_pbchsim`. This is inherent to the puncturing: half of the
     864 coded bits are not transmitted, and 288 of the 512 bits of the polar
     mother code have no received copy (code rate 0.25 instead of 0.11).
-  - The UE-specific CORESET of BWPs below 24 PRBs has 2 symbols, with 3
-    symbols the OAI UE did not decode the PDCCH after RRCSetup.
+  - The UE-specific CORESET of BWPs below 24 PRBs is 12 RBs and 2 symbols: a
+    third symbol would overlap the PDSCH, which starts at symbol 2.
 - A CORESET#0 of 3 symbols must not be in the slot of the SSB: with
   `searchSpaceZero` 0 (O = 0), its third symbol overlaps the SSB (case A,
   symbols 2 to 5) and no PDCCH candidate of SIB1 is available, the gNB stops

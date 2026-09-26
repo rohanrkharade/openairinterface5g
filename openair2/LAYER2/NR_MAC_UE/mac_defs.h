@@ -623,6 +623,7 @@ typedef struct NR_UE_MAC_INST_s {
   int ssb_start_subcarrier;
   /// SSB punctured to 12 RBs, found on the 3 MHz synchronization raster
   bool ssb_punctured;
+  nr_ssb_raster_t ssb_raster; // raster of the SSB of the MIB, it selects the CORESET#0 table
   uint64_t dl_frequency;
   int numerology;
 

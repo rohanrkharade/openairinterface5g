@@ -22,6 +22,7 @@ int get_NTN_Koffset(const NR_ServingCellConfigCommon_t *scc);
 bool is_ssb_configured(const NR_ServingCellConfigCommon_t *scc, int ssb_index);
 int get_max_ssbs(const NR_ServingCellConfigCommon_t *scc);
 bool is_ssb_punctured(const NR_ServingCellConfigCommon_t *scc);
+nr_ssb_raster_t get_ssb_raster(const NR_ServingCellConfigCommon_t *scc);
 int get_first_ul_slot(const frame_structure_t *fs, bool mixed);
 int get_ul_slots_per_period(const frame_structure_t *fs);
 int get_ul_slots_per_frame(const frame_structure_t *fs);

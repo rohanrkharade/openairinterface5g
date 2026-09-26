@@ -205,7 +205,7 @@ void schedule_nr_mib(nr_cell_sched_t *cell, frame_t frameP, slot_t slotP, nfapi_
                                                   i_ssb,
                                                   ssb_frame_periodicity,
                                                   prb_offset,
-                                                  is_ssb_punctured(scc));
+                                                  get_ssb_raster(scc));
             cell->type0_PDCCH_CSS_config[i_ssb].active = true;
           }
         }

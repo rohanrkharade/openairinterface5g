@@ -524,7 +524,7 @@ void update_pdcch_config(NR_UE_MAC_INST_t *mac)
         mac->mib_ssb,
         1, // If the UE is not configured with a periodicity, the UE assumes a periodicity of a half frame
         ssb_offset_point_a,
-        mac->ssb_punctured);
+        mac->ssb_raster);
   else
     LOG_E(MAC, "Call update_pdcch_config( but no mib\n");
   if (mac->search_space_zero == NULL)

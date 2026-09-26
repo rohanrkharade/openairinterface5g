@@ -249,6 +249,54 @@ TEST(nr_3mhz, gscn_scan)
   EXPECT_EQ(get_scan_ssb_first_sc(1902.7e6, 15, 101, 0, info), 0);
 }
 
+TEST(nr_additional_gscn, raster)
+{
+  // 38.101-1 Table 5.4.3.1-3: n100 GSCN 41637 = 920.73 MHz (12 PRB in 3 MHz), 41638 = 921.45 MHz (20 PRB in 5 MHz)
+  EXPECT_EQ(nr_get_additional_gscn(100, 920730000), NR_N100_GSCN_12PRB);
+  EXPECT_EQ(nr_get_additional_gscn(100, 921450000), NR_N100_GSCN_20PRB);
+  EXPECT_EQ(nr_get_additional_gscn(100, from_nrarfcn(100, 0, 184146)), NR_N100_GSCN_12PRB);
+  EXPECT_EQ(nr_get_additional_gscn(100, from_nrarfcn(100, 0, 184290)), NR_N100_GSCN_20PRB);
+  EXPECT_EQ(nr_get_additional_gscn(28, 920730000), 0);
+  EXPECT_EQ(nr_get_additional_gscn(100, ssref_from_gscn(2305)), 0);
+  // 41637 only with 3 MHz: not on the general raster; 41638 only above 3 MHz: 921.45 MHz is GSCN 31243 of the 3 MHz raster,
+  // which is not in n100
+  check_ssb_raster(920730000, 100, 0, true);
+  EXPECT_DEATH(check_ssb_raster(920730000, 100, 0, false), "not on the synchronization raster");
+  check_ssb_raster(921450000, 100, 0, false);
+  EXPECT_EQ(ssref_3mhz_from_gscn(31243), 921450000);
+  EXPECT_DEATH(check_ssb_raster(921450000, 100, 0, true), "does not belong to GSCN range");
+  // the raster selects the CORESET#0 table
+  EXPECT_EQ(nr_get_ssb_raster(100, 921450000, false), NR_SSB_RASTER_GSCN_41638);
+  EXPECT_EQ(nr_get_ssb_raster(100, 920730000, true), NR_SSB_RASTER_3MHZ);
+  EXPECT_EQ(nr_get_ssb_raster(100, ssref_3mhz_from_gscn(31245), true), NR_SSB_RASTER_3MHZ);
+  EXPECT_EQ(nr_get_ssb_raster(100, ssref_from_gscn(2305), false), NR_SSB_RASTER_DEFAULT);
+  EXPECT_EQ(nr_get_ssb_raster(28, 921450000, false), NR_SSB_RASTER_DEFAULT);
+}
+
+TEST(nr_additional_gscn, scan)
+{
+  nr_gscn_info_t info[MAX_GSCN_BAND];
+  // 5 MHz carrier, pointA 919.65 MHz (center 921.9 MHz): GSCN 41638 is scanned after the n100 GSCNs, its SSB starts at
+  // pointA (CORESET#0 of 20 RBs at offset 0)
+  int n = get_scan_ssb_first_sc(921.9e6, 25, 100, 0, info);
+  ASSERT_GE(n, 2);
+  EXPECT_EQ(info[n - 1].gscn, NR_N100_GSCN_20PRB);
+  EXPECT_EQ(info[n - 1].ssRef, 921.45e6);
+  EXPECT_EQ(info[n - 1].ssbFirstSC, 0);
+  for (int i = 0; i < n - 1; i++)
+    EXPECT_TRUE(info[i].gscn >= 2303 && info[i].gscn <= 2307);
+  // 3 MHz carrier, pointA 919.65 MHz (center 921 MHz): GSCN 41637, the punctured SSB starts at pointA
+  n = get_scan_ssb_first_sc(921e6, 15, 100, 0, info);
+  ASSERT_GE(n, 1);
+  EXPECT_EQ(info[n - 1].gscn, NR_N100_GSCN_12PRB);
+  EXPECT_EQ(info[n - 1].ssRef, 920.73e6);
+  EXPECT_EQ(info[n - 1].ssbFirstSC + NR_SSB_PUNCTURED_SC, 0);
+  // not scanned if the SSB is not in the carrier (3 MHz carrier from 920 MHz)
+  n = get_scan_ssb_first_sc(921.35e6, 15, 100, 0, info);
+  for (int i = 0; i < n; i++)
+    EXPECT_NE(info[i].gscn, NR_N100_GSCN_12PRB);
+}
+
 TEST(nr_3mhz, carrier_within_band)
 {
   // 3 MHz channel (15 PRB) in n100: pointA 920 MHz, carrier center 921.35 MHz, channel 919.85 - 922.85 MHz
