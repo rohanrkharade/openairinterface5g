@@ -416,12 +416,15 @@ Results of the reference run (AWGN channel model), see the outputs in
   `searchSpaceZero` 0 (O = 0), its third symbol overlaps the SSB (case A,
   symbols 2 to 5) and no PDCCH candidate of SIB1 is available, the gNB stops
   with `Could not find CCE for SIB1 DCI`. Use e.g. `searchSpaceZero` 2 (O = 2).
-- The gNB logs `nrarfcn ... is not on the channel raster` for PointA and the
-  SSB NR-ARFCN. Only the carrier center has to be on the channel raster, and it
-  is in all scenarios, so these messages can be ignored.
-- With 5 MHz at 15 kHz on n101 (TDD) and with 3 MHz on n100, the gNB
-  statistics often show a large `CCE fail` count for UL. With n101, it depends
-  on the frequency configuration and on the RNTI: it is much less frequent with
-  PointA 380000 and CORESET#0 index 1 than with the configuration of this
-  tutorial. The cause is not known yet. No UL transmission is lost at the
-  tested load.
+- The gNB warns at startup if the center of a carrier is not on the channel
+  raster of the band (TS 38.101-1 5.4.2). The carriers of all the scenarios are
+  on the 100 kHz channel raster.
+- PDCCH blocking in the SIB1 slots: the UE-specific CORESET and CORESET#0 use
+  the same RBs, and the PDCCH of SIB1 (aggregation level 4, interleaved) covers
+  half of them. With the default UE-specific search space of OAI (2 candidates
+  of aggregation level 2), both candidates of about half of the RNTIs overlap
+  it, and the gNB statistics show a large `CCE fail` count for UL (one per SIB1
+  slot). The 5 and 10 MHz configurations of this tutorial use
+  `uess_agg_levels = [0, 4, 0, 0, 0]` (4 candidates) to avoid it. With 3 MHz,
+  the UE-specific CORESET has 4 CCEs only and is covered by the SIB1 PDCCH:
+  no UL grant is sent in the SIB1 slots, the scheduler uses the next slots.
